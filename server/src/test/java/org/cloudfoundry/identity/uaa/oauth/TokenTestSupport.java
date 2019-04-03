@@ -47,6 +47,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZoneProvisioning;
 import org.cloudfoundry.identity.uaa.zone.InMemoryMultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.TokenPolicy;
 import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.mockito.stubbing.Answer;
 import org.opensaml.saml2.core.AuthnContext;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -263,7 +264,7 @@ public class TokenTestSupport {
 
         requestFactory = new DefaultOAuth2RequestFactory(clientDetailsService);
         timeService = mock(TimeService.class);
-        approvalService = new ApprovalService(timeService, approvalStore);
+        approvalService = new ApprovalService(timeService, approvalStore, new IdentityZoneManagerImpl());
         when(timeService.getCurrentDate()).thenCallRealMethod();
         TokenEndpointBuilder tokenEndpointBuilder = new TokenEndpointBuilder(DEFAULT_ISSUER);
         keyInfoService = new KeyInfoService(DEFAULT_ISSUER);

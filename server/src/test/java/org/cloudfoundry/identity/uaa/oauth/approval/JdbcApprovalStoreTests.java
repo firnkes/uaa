@@ -24,6 +24,7 @@ import org.cloudfoundry.identity.uaa.test.UaaTestAccounts;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -70,7 +71,7 @@ public class JdbcApprovalStoreTests extends JdbcTestBase {
             testAccounts.addRandomUser(jdbcTemplate, userId);
         }
 
-        dao = spy(new JdbcApprovalStore(jdbcTemplate));
+        dao = spy(new JdbcApprovalStore(jdbcTemplate, new IdentityZoneManagerImpl()));
 
         eventPublisher = TestApplicationEventPublisher.forEventClass(ApprovalModifiedEvent.class);
         dao.setApplicationEventPublisher(eventPublisher);

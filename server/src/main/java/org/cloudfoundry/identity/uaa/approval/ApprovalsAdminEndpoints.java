@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.approval;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.error.UaaException;
@@ -23,7 +24,6 @@ import org.cloudfoundry.identity.uaa.util.UaaPagingUtils;
 import org.cloudfoundry.identity.uaa.web.ConvertingExceptionView;
 import org.cloudfoundry.identity.uaa.web.ExceptionReport;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +55,11 @@ import java.util.Set;
 
 @Controller
 public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsControllerService {
+    private final IdentityZoneManager identityZoneManager;
+
+    public ApprovalsAdminEndpoints(IdentityZoneManager identityZoneManager) {
+        this.identityZoneManager = identityZoneManager;
+    }
 
     private ApprovalStore approvalStore = null;
 
@@ -99,7 +104,7 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
                                        @RequestParam(required = false, defaultValue = "100") int count) {
         String userId = getCurrentUserId();
         logger.debug("Fetching all approvals for user: " + userId);
-        List<Approval> input = approvalStore.getApprovalsForUser(userId, IdentityZoneHolder.get().getId());
+        List<Approval> input = approvalStore.getApprovalsForUser(userId, identityZoneManager.getCurrentIdentityZone().getId());
         List<Approval> approvals = UaaPagingUtils.subList(input, startIndex, count);
 
         // Find the clients for these approvals
@@ -111,7 +116,7 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
         // Find the auto approved scopes for these clients
         Map<String, Set<String>> clientAutoApprovedScopes = new HashMap<String, Set<String>>();
         for (String clientId : clientIds) {
-            BaseClientDetails client = (BaseClientDetails) clientDetailsService.loadClientByClientId(clientId, IdentityZoneHolder.get().getId());
+            BaseClientDetails client = (BaseClientDetails) clientDetailsService.loadClientByClientId(clientId, identityZoneManager.getCurrentIdentityZone().getId());
 
             Set<String> autoApproved = client.getAutoApproveScopes();
             Set<String> autoApprovedScopes = new HashSet<String>();
@@ -151,7 +156,7 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
     public List<Approval> updateApprovals(@RequestBody Approval[] approvals) {
         String currentUserId = getCurrentUserId();
         logger.debug("Updating approvals for user: " + currentUserId);
-        approvalStore.revokeApprovalsForUser(currentUserId, IdentityZoneHolder.get().getId());
+        approvalStore.revokeApprovalsForUser(currentUserId, identityZoneManager.getCurrentIdentityZone().getId());
         List<Approval> result = new LinkedList<>();
         for (Approval approval : approvals) {
             if (StringUtils.hasText(approval.getUserId()) &&  !isValidUser(approval.getUserId())) {
@@ -161,7 +166,7 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
             } else {
                 approval.setUserId(currentUserId);
             }
-            if (approvalStore.addApproval(approval, IdentityZoneHolder.get().getId())) {
+            if (approvalStore.addApproval(approval, identityZoneManager.getCurrentIdentityZone().getId())) {
                 result.add(approval);
             }
         }
@@ -172,10 +177,10 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
     @ResponseBody
     @Override
     public List<Approval> updateClientApprovals(@PathVariable String clientId, @RequestBody Approval[] approvals) {
-        clientDetailsService.loadClientByClientId(clientId, IdentityZoneHolder.get().getId());
+        clientDetailsService.loadClientByClientId(clientId, identityZoneManager.getCurrentIdentityZone().getId());
         String currentUserId = getCurrentUserId();
         logger.debug("Updating approvals for user: " + currentUserId);
-        approvalStore.revokeApprovalsForClientAndUser(clientId, currentUserId, IdentityZoneHolder.get().getId());
+        approvalStore.revokeApprovalsForClientAndUser(clientId, currentUserId, identityZoneManager.getCurrentIdentityZone().getId());
         for (Approval approval : approvals) {
             if (StringUtils.hasText(approval.getUserId()) && !isValidUser(approval.getUserId())) {
                 logger.warn(String.format("Error[1] %s attemting to update approvals for %s.", currentUserId, approval.getUserId()));
@@ -184,9 +189,9 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
             } else {
                 approval.setUserId(currentUserId);
             }
-            approvalStore.addApproval(approval, IdentityZoneHolder.get().getId());
+            approvalStore.addApproval(approval, identityZoneManager.getCurrentIdentityZone().getId());
         }
-        return approvalStore.getApprovals(currentUserId, clientId, IdentityZoneHolder.get().getId());
+        return approvalStore.getApprovals(currentUserId, clientId, identityZoneManager.getCurrentIdentityZone().getId());
     }
 
     private boolean isValidUser(String userId) {
@@ -205,10 +210,10 @@ public class ApprovalsAdminEndpoints implements InitializingBean, ApprovalsContr
     @ResponseBody
     @Override
     public ActionResult revokeApprovals(@RequestParam(required = true) String clientId) {
-        clientDetailsService.loadClientByClientId(clientId, IdentityZoneHolder.get().getId());
+        clientDetailsService.loadClientByClientId(clientId, identityZoneManager.getCurrentIdentityZone().getId());
         String userId = getCurrentUserId();
         logger.debug("Revoking all existing approvals for user: " + userId + " and client " + clientId);
-        approvalStore.revokeApprovalsForClientAndUser(clientId, userId, IdentityZoneHolder.get().getId());
+        approvalStore.revokeApprovalsForClientAndUser(clientId, userId, identityZoneManager.getCurrentIdentityZone().getId());
         return new ActionResult("ok", "Approvals of user " + userId + " and client " + clientId + " revoked");
     }
 

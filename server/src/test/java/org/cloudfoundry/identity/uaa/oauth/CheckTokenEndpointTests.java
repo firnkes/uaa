@@ -36,6 +36,7 @@ import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.util.TimeService;
 import org.cloudfoundry.identity.uaa.zone.*;
 import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -277,7 +278,7 @@ public class CheckTokenEndpointTests {
         userDatabase = mock(UaaUserDatabase.class);
         KeyInfoService keyInfoService = new KeyInfoService("http://localhost:8080/uaa");
         tokenValidationService = new TokenValidationService(tokenProvisioning, tokenEndpointBuilder, userDatabase, clientDetailsService, keyInfoService);
-        ApprovalService approvalService = new ApprovalService(timeService, approvalStore);
+        ApprovalService approvalService = new ApprovalService(timeService, approvalStore, new IdentityZoneManagerImpl());
         tokenServices = new UaaTokenServices(
                 mock(IdTokenCreator.class),
                 tokenEndpointBuilder,

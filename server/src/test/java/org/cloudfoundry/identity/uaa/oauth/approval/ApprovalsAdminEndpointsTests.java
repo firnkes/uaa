@@ -17,7 +17,6 @@ import org.cloudfoundry.identity.uaa.approval.Approval;
 import org.cloudfoundry.identity.uaa.approval.Approval.ApprovalStatus;
 import org.cloudfoundry.identity.uaa.approval.ApprovalsAdminEndpoints;
 import org.cloudfoundry.identity.uaa.approval.JdbcApprovalStore;
-import org.cloudfoundry.identity.uaa.constants.OriginKeys;
 import org.cloudfoundry.identity.uaa.error.UaaException;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.test.JdbcTestBase;
@@ -33,6 +32,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenantJdbcClientDetailsService;
 import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,8 +94,8 @@ public class ApprovalsAdminEndpointsTests extends JdbcTestBase {
         marissa = userDao.retrieveUserById(userId);
         assertNotNull(marissa);
 
-        dao = new JdbcApprovalStore(jdbcTemplate);
-        endpoints = new ApprovalsAdminEndpoints();
+        dao = new JdbcApprovalStore(jdbcTemplate, new IdentityZoneManagerImpl());
+        endpoints = new ApprovalsAdminEndpoints(new IdentityZoneManagerImpl());
         endpoints.setApprovalStore(dao);
         endpoints.setUaaUserDatabase(userDao);
 
