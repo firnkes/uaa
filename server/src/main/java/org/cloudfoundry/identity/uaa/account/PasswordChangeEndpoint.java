@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.account;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.web.ConvertingExceptionView;
@@ -25,7 +26,6 @@ import org.cloudfoundry.identity.uaa.scim.validate.NullPasswordValidator;
 import org.cloudfoundry.identity.uaa.scim.validate.PasswordValidator;
 import org.cloudfoundry.identity.uaa.security.DefaultSecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -45,6 +45,11 @@ import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 
 @Controller
 public class PasswordChangeEndpoint {
+    private final IdentityZoneManager identityZoneManager;
+
+    public PasswordChangeEndpoint(IdentityZoneManager identityZoneManager) {
+        this.identityZoneManager = identityZoneManager;
+    }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -82,7 +87,7 @@ public class PasswordChangeEndpoint {
     @RequestMapping(value = "/Users/{userId}/password", method = RequestMethod.PUT)
     @ResponseBody
     public ActionResult changePassword(@PathVariable String userId, @RequestBody PasswordChangeRequest change) {
-        String zoneId = IdentityZoneHolder.get().getId();
+        String zoneId = identityZoneManager.getCurrentIdentityZone().getId();
         String oldPassword = change.getOldPassword();
         String newPassword = change.getPassword();
 

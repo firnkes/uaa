@@ -19,7 +19,7 @@ import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
 import org.cloudfoundry.identity.uaa.scim.exception.InvalidPasswordException;
 import org.cloudfoundry.identity.uaa.util.DomainFilter;
 import org.cloudfoundry.identity.uaa.zone.BrandingInformation;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.hibernate.validator.constraints.Email;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -47,10 +47,12 @@ public class AccountsController {
     private final AccountCreationService accountCreationService;
 
     private final IdentityProviderProvisioning identityProviderProvisioning;
+    private final IdentityZoneManager identityZoneManager;
 
-    public AccountsController(AccountCreationService accountCreationService, IdentityProviderProvisioning identityProviderProvisioning) {
+    public AccountsController(AccountCreationService accountCreationService, IdentityProviderProvisioning identityProviderProvisioning, IdentityZoneManager identityZoneManager) {
         this.accountCreationService = accountCreationService;
         this.identityProviderProvisioning = identityProviderProvisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @RequestMapping(value = "/create_account", method = GET)
@@ -58,7 +60,7 @@ public class AccountsController {
                                   @RequestParam(value = "client_id", required = false) String clientId,
                                   @RequestParam(value = "redirect_uri", required = false) String redirectUri,
                                   HttpServletResponse response) {
-        if(!IdentityZoneHolder.get().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
+        if(!identityZoneManager.getCurrentIdentityZone().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
             return handleSelfServiceDisabled(model, response, "error_message_code", "self_service_disabled");
         }
         model.addAttribute("client_id", clientId);
@@ -77,18 +79,18 @@ public class AccountsController {
                                       @RequestParam("password_confirmation") String passwordConfirmation,
                                       @RequestParam(value = "does_user_consent", required = false) boolean doesUserConsent) {
 
-        BrandingInformation zoneBranding = IdentityZoneHolder.get().getConfig().getBranding();
+        BrandingInformation zoneBranding = identityZoneManager.getCurrentIdentityZone().getConfig().getBranding();
         if (zoneBranding != null && zoneBranding.getConsent() != null && !doesUserConsent) {
             return handleUnprocessableEntity(model, response, "error_message_code", "missing_consent");
         }
-        if(!IdentityZoneHolder.get().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
+        if(!identityZoneManager.getCurrentIdentityZone().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
             return handleSelfServiceDisabled(model, response, "error_message_code", "self_service_disabled");
         }
         if(result.hasErrors()) {
             return handleUnprocessableEntity(model, response, "error_message_code", "invalid_email");
         }
 
-        List<IdentityProvider> identityProviderList = DomainFilter.getIdpsForEmailDomain(identityProviderProvisioning.retrieveAll(true, IdentityZoneHolder.get().getId()), email.getEmail());
+        List<IdentityProvider> identityProviderList = DomainFilter.getIdpsForEmailDomain(identityProviderProvisioning.retrieveAll(true, identityZoneManager.getCurrentIdentityZone().getId()), email.getEmail());
         identityProviderList = identityProviderList.stream().filter(idp -> !idp.getOriginKey().equals(OriginKeys.UAA)).collect(Collectors.toList());
         if(!identityProviderList.isEmpty()) {
             model.addAttribute("email", email.getEmail());
@@ -150,7 +152,7 @@ public class AccountsController {
     }
 
     private void updateModelWithConsentAttributes(Model model) {
-        BrandingInformation zoneBranding = IdentityZoneHolder.get().getConfig().getBranding();
+        BrandingInformation zoneBranding = identityZoneManager.getCurrentIdentityZone().getConfig().getBranding();
         if (zoneBranding != null && zoneBranding.getConsent() != null) {
             model.addAttribute("consent_text", zoneBranding.getConsent().getText());
             model.addAttribute("consent_link", zoneBranding.getConsent().getLink());

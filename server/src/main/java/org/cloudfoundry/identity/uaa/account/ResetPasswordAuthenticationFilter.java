@@ -18,7 +18,7 @@ import org.cloudfoundry.identity.uaa.codestore.ExpiringCode;
 import org.cloudfoundry.identity.uaa.codestore.ExpiringCodeStore;
 import org.cloudfoundry.identity.uaa.error.UaaException;
 import org.cloudfoundry.identity.uaa.scim.exception.InvalidPasswordException;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -38,12 +38,14 @@ public class ResetPasswordAuthenticationFilter extends OncePerRequestFilter {
     private final AuthenticationSuccessHandler handler;
     private final AuthenticationEntryPoint entryPoint;
     private final ExpiringCodeStore expiringCodeStore;
+    private final IdentityZoneManager identityZoneManager;
 
-    public ResetPasswordAuthenticationFilter(ResetPasswordService service, AuthenticationSuccessHandler handler, AuthenticationEntryPoint entryPoint, ExpiringCodeStore expiringCodeStore) {
+    public ResetPasswordAuthenticationFilter(ResetPasswordService service, AuthenticationSuccessHandler handler, AuthenticationEntryPoint entryPoint, ExpiringCodeStore expiringCodeStore, IdentityZoneManager identityZoneManager) {
         this.service = service;
         this.handler = handler;
         this.entryPoint = entryPoint;
         this.expiringCodeStore = expiringCodeStore;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -56,7 +58,7 @@ public class ResetPasswordAuthenticationFilter extends OncePerRequestFilter {
         PasswordConfirmationValidation validation = new PasswordConfirmationValidation(email, password, passwordConfirmation);
         ExpiringCode expiringCode = null;
         try {
-            expiringCode = expiringCodeStore.retrieveCode(code, IdentityZoneHolder.get().getId());
+            expiringCode = expiringCodeStore.retrieveCode(code, identityZoneManager.getCurrentIdentityZone().getId());
             validation.throwIfNotValid();
             if (expiringCode == null) {
                 throw new InvalidCodeException("invalid_code", "Sorry, your reset password link is no longer valid. Please request a new one", 422);
@@ -81,7 +83,7 @@ public class ResetPasswordAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void refreshCode(HttpServletRequest request, ExpiringCode expiringCode) {
-        ExpiringCode newCode = expiringCodeStore.generateCode(expiringCode.getData(), new Timestamp(System.currentTimeMillis() + 1000 * 60 * 10), expiringCode.getIntent(), IdentityZoneHolder.get().getId());
+        ExpiringCode newCode = expiringCodeStore.generateCode(expiringCode.getData(), new Timestamp(System.currentTimeMillis() + 1000 * 60 * 10), expiringCode.getIntent(), identityZoneManager.getCurrentIdentityZone().getId());
         request.setAttribute("code", newCode.getCode());
     }
 

@@ -26,6 +26,7 @@ import org.cloudfoundry.identity.uaa.security.PollutionPreventionExtension;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -278,7 +280,13 @@ public class ProfileControllerTests extends TestClassNullifier {
         ProfileController profileController(ApprovalStore approvalsService,
                                             MultitenantClientServices clientDetailsService,
                                             SecurityContextAccessor securityContextAccessor) {
-            return new ProfileController(approvalsService, clientDetailsService, securityContextAccessor);
+            ProfileController profileController = new ProfileController(
+                    approvalsService,
+                    clientDetailsService,
+                    new IdentityZoneManagerImpl());
+
+            ReflectionTestUtils.setField(profileController, "securityContextAccessor", securityContextAccessor);
+            return profileController;
         }
     }
 }

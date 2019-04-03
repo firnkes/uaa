@@ -23,6 +23,7 @@ import org.cloudfoundry.identity.uaa.scim.validate.PasswordValidator;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.util.FakePasswordEncoder;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
 import org.junit.After;
@@ -72,7 +73,7 @@ public class PasswordChangeEndpointTests {
                 new JdbcPagingListFactory(jdbcTemplate, LimitSqlAdapterFactory.getLimitSqlAdapter()),
                 new FakePasswordEncoder());
 
-        endpoints = new PasswordChangeEndpoint();
+        endpoints = new PasswordChangeEndpoint(new IdentityZoneManagerImpl());
         endpoints.setScimUserProvisioning(dao);
 
         joel = new ScimUser(null, "jdsa", "Joel", "D'sa");

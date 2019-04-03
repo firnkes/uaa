@@ -13,6 +13,7 @@
 package org.cloudfoundry.identity.uaa.account;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.codestore.ExpiringCode;
@@ -24,7 +25,6 @@ import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.util.UaaUrlUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MergedZoneBrandingInformation;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -55,19 +55,21 @@ public class ResetPasswordController {
     private final TemplateEngine templateEngine;
     private final ExpiringCodeStore codeStore;
     private final UaaUserDatabase userDatabase;
+    private final IdentityZoneManager identityZoneManager;
 
     public ResetPasswordController(
-        ResetPasswordService resetPasswordService,
-        MessageService messageService,
-        TemplateEngine templateEngine,
-        ExpiringCodeStore codeStore,
-        UaaUserDatabase userDatabase
-    ) {
+            ResetPasswordService resetPasswordService,
+            MessageService messageService,
+            TemplateEngine templateEngine,
+            ExpiringCodeStore codeStore,
+            UaaUserDatabase userDatabase,
+            IdentityZoneManager identityZoneManager) {
         this.resetPasswordService = resetPasswordService;
         this.messageService = messageService;
         this.templateEngine = templateEngine;
         this.codeStore = codeStore;
         this.userDatabase = userDatabase;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @RequestMapping(value = "/forgot_password", method = RequestMethod.GET)
@@ -75,7 +77,7 @@ public class ResetPasswordController {
                                      @RequestParam(required = false, value = "client_id") String clientId,
                                      @RequestParam(required = false, value = "redirect_uri") String redirectUri,
                                      HttpServletResponse response) {
-        if(!IdentityZoneHolder.get().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
+        if(!identityZoneManager.getCurrentIdentityZone().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
             return handleSelfServiceDisabled(model, response, "error_message_code", "self_service_disabled");
         }
         model.addAttribute("client_id", clientId);
@@ -86,7 +88,7 @@ public class ResetPasswordController {
     @RequestMapping(value = "/forgot_password.do", method = RequestMethod.POST)
     public String forgotPassword(Model model, @RequestParam("username") String username, @RequestParam(value = "client_id", defaultValue = "") String clientId,
                                  @RequestParam(value = "redirect_uri", defaultValue = "") String redirectUri, HttpServletResponse response) {
-        if(!IdentityZoneHolder.get().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
+        if(!identityZoneManager.getCurrentIdentityZone().getConfig().getLinks().getSelfService().isSelfServiceLinksEnabled()) {
             return handleSelfServiceDisabled(model, response, "error_message_code", "self_service_disabled");
         }
         forgotPassword(username, clientId, redirectUri);
@@ -126,7 +128,7 @@ public class ResetPasswordController {
     }
 
     private String getCodeSentEmailHtml(String code) {
-        String resetUrl = UaaUrlUtils.getUaaUrl("/reset_password", IdentityZoneHolder.get());
+        String resetUrl = UaaUrlUtils.getUaaUrl("/reset_password", identityZoneManager.getCurrentIdentityZone());
 
         final Context ctx = new Context();
         ctx.setVariable("serviceName", getServiceName());
@@ -136,7 +138,7 @@ public class ResetPasswordController {
     }
 
     private String getResetUnavailableEmailHtml(String email) {
-        String hostname = UaaUrlUtils.getUaaHost(IdentityZoneHolder.get());
+        String hostname = UaaUrlUtils.getUaaHost(identityZoneManager.getCurrentIdentityZone());
 
         final Context ctx = new Context();
         ctx.setVariable("serviceName", getServiceName());
@@ -146,11 +148,11 @@ public class ResetPasswordController {
     }
 
     private String getServiceName() {
-        if (IdentityZoneHolder.isUaa()) {
+        if (identityZoneManager.isCurrentZoneUaa()) {
             String companyName = MergedZoneBrandingInformation.resolveBranding().getCompanyName();
             return StringUtils.hasText(companyName) ? companyName : "Cloud Foundry";
         } else {
-            return IdentityZoneHolder.get().getName();
+            return identityZoneManager.getCurrentIdentityZone().getName();
         }
     }
 
@@ -164,14 +166,14 @@ public class ResetPasswordController {
                                     HttpServletResponse response,
                                     @RequestParam("code") String code) {
 
-        ExpiringCode expiringCode = checkIfUserExists(codeStore.retrieveCode(code, IdentityZoneHolder.get().getId()));
+        ExpiringCode expiringCode = checkIfUserExists(codeStore.retrieveCode(code, identityZoneManager.getCurrentIdentityZone().getId()));
         if (expiringCode==null) {
             return handleUnprocessableEntity(model, response, "message_code", "bad_code");
         } else {
             PasswordChange passwordChange = JsonUtils.readValue(expiringCode.getData(), PasswordChange.class);
             String userId = passwordChange.getUserId();
             UaaUser uaaUser = userDatabase.retrieveUserById(userId);
-            String newCode = codeStore.generateCode(expiringCode.getData(), new Timestamp(System.currentTimeMillis() + (10 * 60 * 1000)), expiringCode.getIntent(), IdentityZoneHolder.get().getId()).getCode();
+            String newCode = codeStore.generateCode(expiringCode.getData(), new Timestamp(System.currentTimeMillis() + (10 * 60 * 1000)), expiringCode.getIntent(), identityZoneManager.getCurrentIdentityZone().getId()).getCode();
             model.addAttribute("code", newCode);
             model.addAttribute("email", uaaUser.getEmail());
             model.addAttribute("username", uaaUser.getUsername());

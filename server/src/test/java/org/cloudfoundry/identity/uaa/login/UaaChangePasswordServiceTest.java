@@ -24,6 +24,7 @@ import org.cloudfoundry.identity.uaa.scim.validate.PasswordValidator;
 import org.cloudfoundry.identity.uaa.test.MockAuthentication;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,7 +54,7 @@ public class UaaChangePasswordServiceTest {
         SecurityContextHolder.getContext().setAuthentication(new MockAuthentication());
         scimUserProvisioning = mock(ScimUserProvisioning.class);
         passwordValidator = mock(PasswordValidator.class);
-        subject = new UaaChangePasswordService(scimUserProvisioning, passwordValidator);
+        subject = new UaaChangePasswordService(scimUserProvisioning, passwordValidator, new IdentityZoneManagerImpl());
     }
 
     @Test(expected = BadCredentialsException.class)

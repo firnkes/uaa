@@ -12,6 +12,8 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.account;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.approval.Approval;
@@ -23,7 +25,6 @@ import org.cloudfoundry.identity.uaa.oauth.client.ClientConstants;
 import org.cloudfoundry.identity.uaa.security.DefaultSecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.ClientDetails;
@@ -56,18 +57,15 @@ public class ProfileController {
     private final ApprovalStore approvalsService;
     private final MultitenantClientServices clientDetailsService;
     private final SecurityContextAccessor securityContextAccessor;
-
-    public ProfileController(ApprovalStore approvalsService,
-                             MultitenantClientServices clientDetailsService) {
-        this(approvalsService, clientDetailsService, new DefaultSecurityContextAccessor());
-    }
+    private final IdentityZoneManager identityZoneManager;
 
     public ProfileController(ApprovalStore approvalsService,
                              MultitenantClientServices clientDetailsService,
-                             SecurityContextAccessor securityContextAccessor) {
+                             IdentityZoneManager identityZoneManager) {
         this.approvalsService = approvalsService;
         this.clientDetailsService = clientDetailsService;
-        this.securityContextAccessor = securityContextAccessor;
+        this.identityZoneManager = identityZoneManager;
+        this.securityContextAccessor = new DefaultSecurityContextAccessor();
     }
 
     /**
@@ -86,7 +84,7 @@ public class ProfileController {
     protected Map<String, String> getClientNames(Map<String, List<DescribedApproval>> approvals) {
         Map<String, String> clientNames = new LinkedHashMap<>();
         for (String clientId : approvals.keySet()) {
-            ClientDetails details = clientDetailsService.loadClientByClientId(clientId, IdentityZoneHolder.get().getId());
+            ClientDetails details = clientDetailsService.loadClientByClientId(clientId, identityZoneManager.getCurrentIdentityZone().getId());
             String name = details.getClientId();
             if (details.getAdditionalInformation()!=null && details.getAdditionalInformation().get(ClientConstants.CLIENT_NAME)!=null) {
                 name = (String)details.getAdditionalInformation().get(ClientConstants.CLIENT_NAME);
@@ -150,7 +148,7 @@ public class ProfileController {
 
     public Map<String, List<DescribedApproval>> getCurrentApprovalsForUser(String userId) {
         Map<String, List<DescribedApproval>> result = new HashMap<>();
-        List<Approval> approvalsResponse = approvalsService.getApprovalsForUser(userId, IdentityZoneHolder.get().getId());
+        List<Approval> approvalsResponse = approvalsService.getApprovalsForUser(userId, identityZoneManager.getCurrentIdentityZone().getId());
 
         List<DescribedApproval> approvals = new ArrayList<>();
         for (Approval approval : approvalsResponse) {
@@ -188,7 +186,7 @@ public class ProfileController {
     }
 
     public void updateApprovals(List<DescribedApproval> approvals) {
-        String zoneId = IdentityZoneHolder.get().getId();
+        String zoneId = identityZoneManager.getCurrentIdentityZone().getId();
         for (DescribedApproval approval : approvals) {
             approvalsService.revokeApprovalsForClientAndUser(approval.getClientId(), approval.getUserId(), zoneId);
         }
@@ -199,7 +197,7 @@ public class ProfileController {
 
     public void deleteApprovalsForClient(String userId, String clientId) {
         clientDetailsService.loadClientByClientId(clientId);
-        approvalsService.revokeApprovalsForClientAndUser(clientId, userId, IdentityZoneHolder.get().getId());
+        approvalsService.revokeApprovalsForClientAndUser(clientId, userId, identityZoneManager.getCurrentIdentityZone().getId());
     }
 
     private String getCurrentUserId() {
