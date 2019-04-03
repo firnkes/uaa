@@ -20,6 +20,7 @@ import org.cloudfoundry.identity.uaa.test.JdbcTestBase;
 import org.cloudfoundry.identity.uaa.test.TestUtils;
 import org.cloudfoundry.identity.uaa.test.UaaTestAccounts;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +60,7 @@ public class UserManagedAuthzApprovalHandlerTests extends JdbcTestBase {
 
     @Before
     public void initUserManagedAuthzApprovalHandlerTests() {
-        approvalStore = new JdbcApprovalStore(jdbcTemplate);
+        approvalStore = new JdbcApprovalStore(jdbcTemplate, new IdentityZoneManagerImpl());
         handler.setApprovalStore(approvalStore);
         handler.setClientDetailsService(
             mockClientDetailsService(

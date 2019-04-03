@@ -27,6 +27,7 @@ import org.cloudfoundry.identity.uaa.web.ExceptionReportHttpMessageConverter;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MfaConfig;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
 import org.junit.jupiter.api.*;
@@ -165,7 +166,7 @@ class ScimUserEndpointsTests {
         map.put(HttpMediaTypeException.class, HttpStatus.BAD_REQUEST);
         endpoints.setStatuses(map);
 
-        am = new JdbcApprovalStore(jdbcTemplate);
+        am = new JdbcApprovalStore(jdbcTemplate, new IdentityZoneManagerImpl());
         endpoints.setApprovalStore(am);
 
         endpoints.setIsSelfCheck(new IsSelfCheck(null));

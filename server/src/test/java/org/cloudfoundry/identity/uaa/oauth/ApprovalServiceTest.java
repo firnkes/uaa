@@ -5,6 +5,7 @@ import org.cloudfoundry.identity.uaa.approval.Approval;
 import org.cloudfoundry.identity.uaa.approval.ApprovalService;
 import org.cloudfoundry.identity.uaa.approval.ApprovalStore;
 import org.cloudfoundry.identity.uaa.util.TimeService;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class ApprovalServiceTest {
         timeService = mock(TimeService.class);
         approvalStore = mock(ApprovalStore.class);
         clientDetails = new BaseClientDetails(CLIENT_ID, null, "foo.read,bar.write", null, null);
-        approvalService = new ApprovalService(timeService, approvalStore);
+        approvalService = new ApprovalService(timeService, approvalStore, new IdentityZoneManagerImpl());
     }
 
     @Test

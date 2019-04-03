@@ -1,10 +1,10 @@
 package org.cloudfoundry.identity.uaa.approval;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.util.TimeService;
 import org.cloudfoundry.identity.uaa.util.UaaTokenUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
 import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 
@@ -18,11 +18,13 @@ import static org.cloudfoundry.identity.uaa.oauth.token.TokenConstants.GRANT_TYP
 public class ApprovalService {
     TimeService timeService;
     ApprovalStore approvalStore;
+    private final IdentityZoneManager identityZoneManager;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public ApprovalService(TimeService timeService, ApprovalStore approvalStore) {
+    public ApprovalService(TimeService timeService, ApprovalStore approvalStore, IdentityZoneManager identityZoneManager) {
         this.timeService = timeService;
         this.approvalStore = approvalStore;
+        this.identityZoneManager = identityZoneManager;
     }
 
     public void ensureRequiredApprovals(String userId,
@@ -33,7 +35,7 @@ public class ApprovalService {
         if(autoApprovedScopes.containsAll(requestedScopes)) { return; }
         Set<String> approvedScopes = new HashSet<>(autoApprovedScopes);
 
-        List<Approval> approvals = approvalStore.getApprovals(userId, clientDetails.getClientId(), IdentityZoneHolder.get().getId());
+        List<Approval> approvals = approvalStore.getApprovals(userId, clientDetails.getClientId(), identityZoneManager.getCurrentIdentityZone().getId());
         for (Approval approval : approvals) {
             if (requestedScopes.contains(approval.getScope()) && approval.getStatus() == Approval.ApprovalStatus.APPROVED) {
                 if (!approval.isActiveAsOf(timeService.getCurrentDate())) {

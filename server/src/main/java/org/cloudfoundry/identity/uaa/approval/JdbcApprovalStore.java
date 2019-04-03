@@ -12,12 +12,12 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.approval;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.approval.Approval.ApprovalStatus;
 import org.cloudfoundry.identity.uaa.audit.event.ApprovalModifiedEvent;
 import org.cloudfoundry.identity.uaa.audit.event.SystemDeletable;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -74,12 +74,14 @@ public class JdbcApprovalStore implements ApprovalStore, ApplicationEventPublish
     protected static final String DELETE_USER_APPROVALS = "delete from authz_approvals where user_id = ? and identity_zone_id = ?";
 
     public static final String DELETE_OF_USER_APPROVALS_BY_PROVIDER = "delete from authz_approvals where user_id in (select id from users where identity_zone_id = ? and origin = ?)";
+    private final IdentityZoneManager identityZoneManager;
 
 
     private boolean handleRevocationsAsExpiry = false;
     private ApplicationEventPublisher applicationEventPublisher;
 
-    public JdbcApprovalStore(JdbcTemplate jdbcTemplate) {
+    public JdbcApprovalStore(JdbcTemplate jdbcTemplate, IdentityZoneManager identityZoneManager) {
+        this.identityZoneManager = identityZoneManager;
         Assert.notNull(jdbcTemplate);
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -112,7 +114,7 @@ public class JdbcApprovalStore implements ApprovalStore, ApplicationEventPublish
     public boolean addApproval(final Approval approval, final String zoneId) {
         logger.debug(String.format("adding approval: [%s]", approval));
         try {
-            refreshApproval(approval, IdentityZoneHolder.get().getId()); // try to refresh the approval
+            refreshApproval(approval, identityZoneManager.getCurrentIdentityZone().getId()); // try to refresh the approval
         } catch (DataIntegrityViolationException ex) { // could not find the
             // approval. add it.
             int count = jdbcTemplate.update(ADD_AUTHZ_SQL, new PreparedStatementSetter() {
