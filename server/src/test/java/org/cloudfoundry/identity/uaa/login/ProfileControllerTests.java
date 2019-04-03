@@ -26,6 +26,7 @@ import org.cloudfoundry.identity.uaa.security.PollutionPreventionExtension;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -278,7 +279,7 @@ public class ProfileControllerTests extends TestClassNullifier {
         ProfileController profileController(ApprovalStore approvalsService,
                                             MultitenantClientServices clientDetailsService,
                                             SecurityContextAccessor securityContextAccessor) {
-            return new ProfileController(approvalsService, clientDetailsService, securityContextAccessor);
+            return new ProfileController(approvalsService, clientDetailsService, securityContextAccessor, new IdentityZoneManagerImpl());
         }
     }
 }

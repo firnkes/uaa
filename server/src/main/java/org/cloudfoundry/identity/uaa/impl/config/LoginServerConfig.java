@@ -6,6 +6,7 @@ import org.cloudfoundry.identity.uaa.message.EmailService;
 import org.cloudfoundry.identity.uaa.message.MessageService;
 import org.cloudfoundry.identity.uaa.message.NotificationsService;
 import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -14,8 +15,8 @@ import org.springframework.core.env.Environment;
 public class LoginServerConfig {
 
     @Bean
-    public AccountsController accountsController(AccountCreationService accountCreationService, IdentityProviderProvisioning identityProviderProvisioning) {
-        return new AccountsController(accountCreationService, identityProviderProvisioning);
+    public AccountsController accountsController(AccountCreationService accountCreationService, IdentityProviderProvisioning identityProviderProvisioning, IdentityZoneManagerImpl identityZoneManager) {
+        return new AccountsController(accountCreationService, identityProviderProvisioning, identityZoneManager);
     }
 
     @Bean

@@ -25,6 +25,7 @@ import org.cloudfoundry.identity.uaa.provider.OIDCIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.scim.exception.InvalidPasswordException;
 import org.cloudfoundry.identity.uaa.security.PollutionPreventionExtension;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -257,7 +258,7 @@ public class AccountsControllerTest extends TestClassNullifier {
 
         @Bean
         AccountsController accountsController(AccountCreationService accountCreationService, IdentityProviderProvisioning identityProviderProvisioning) {
-            return new AccountsController(accountCreationService, identityProviderProvisioning);
+            return new AccountsController(accountCreationService, identityProviderProvisioning, new IdentityZoneManagerImpl());
         }
     }
 }

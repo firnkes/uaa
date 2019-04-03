@@ -25,6 +25,7 @@ import org.cloudfoundry.identity.uaa.scim.ScimUserProvisioning;
 import org.cloudfoundry.identity.uaa.security.PollutionPreventionExtension;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.zone.*;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -92,7 +93,7 @@ public class EmailChangeEmailServiceTest {
         codeStore = mock(ExpiringCodeStore.class);
         clientDetailsService = mock(MultitenantClientServices.class);
         messageService = mock(EmailService.class);
-        emailChangeEmailService = new EmailChangeEmailService(templateEngine, messageService, scimUserProvisioning, codeStore, clientDetailsService);
+        emailChangeEmailService = new EmailChangeEmailService(templateEngine, messageService, scimUserProvisioning, codeStore, clientDetailsService, new IdentityZoneManagerImpl());
 
         request = new MockHttpServletRequest();
         request.setProtocol("http");
@@ -127,7 +128,7 @@ public class EmailChangeEmailServiceTest {
     @Test
     public void testBeginEmailChangeWithCompanyNameConfigured() throws Exception {
 
-        emailChangeEmailService = new EmailChangeEmailService(templateEngine, messageService, scimUserProvisioning, codeStore, clientDetailsService);
+        emailChangeEmailService = new EmailChangeEmailService(templateEngine, messageService, scimUserProvisioning, codeStore, clientDetailsService, new IdentityZoneManagerImpl());
 
         ScimUser user = new ScimUser("user-001", "user-name", "test-name", "test-name");
         user.setPrimaryEmail("user@example.com");

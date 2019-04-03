@@ -20,6 +20,7 @@ import org.cloudfoundry.identity.uaa.error.UaaException;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.exception.InvalidPasswordException;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -101,7 +102,7 @@ public class ResetPasswordAuthenticationFilterTest {
         when(service.resetPassword(any(ExpiringCode.class), eq(password))).thenReturn(resetPasswordResponse);
         authenticationSuccessHandler = mock(AuthenticationSuccessHandler.class);
         entryPoint = mock(AuthenticationEntryPoint.class);
-        filter = new ResetPasswordAuthenticationFilter(service, authenticationSuccessHandler, entryPoint, codeStore);
+        filter = new ResetPasswordAuthenticationFilter(service, authenticationSuccessHandler, entryPoint, codeStore, new IdentityZoneManagerImpl());
     }
 
     @Test

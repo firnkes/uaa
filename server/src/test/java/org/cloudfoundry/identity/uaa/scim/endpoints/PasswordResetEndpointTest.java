@@ -30,6 +30,7 @@ import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.web.ExceptionReportHttpMessageConverter;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,8 +79,8 @@ public class PasswordResetEndpointTest extends TestClassNullifier {
         passwordValidator = mock(PasswordValidator.class);
         clientDetailsService = mock(MultitenantClientServices.class);
         resourcePropertySource = mock(ResourcePropertySource.class);
-        resetPasswordService = new UaaResetPasswordService(scimUserProvisioning, expiringCodeStore, passwordValidator, clientDetailsService, resourcePropertySource);
-        PasswordResetEndpoint controller = new PasswordResetEndpoint(resetPasswordService);
+        resetPasswordService = new UaaResetPasswordService(scimUserProvisioning, expiringCodeStore, passwordValidator, clientDetailsService, resourcePropertySource, new IdentityZoneManagerImpl());
+        PasswordResetEndpoint controller = new PasswordResetEndpoint(resetPasswordService, new IdentityZoneManagerImpl());
         controller.setCodeStore(expiringCodeStore);
         controller.setMessageConverters(new HttpMessageConverter[] { new ExceptionReportHttpMessageConverter() });
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
