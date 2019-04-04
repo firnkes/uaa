@@ -17,7 +17,7 @@ package org.cloudfoundry.identity.uaa.authentication;
 
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneConfiguration;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
@@ -29,9 +29,11 @@ import java.io.IOException;
 public class ZoneAwareWhitelistLogoutHandler implements LogoutSuccessHandler {
 
     private final MultitenantClientServices clientDetailsService;
+    private final IdentityZoneManager identityZoneManager;
 
-    public ZoneAwareWhitelistLogoutHandler(MultitenantClientServices clientDetailsService) {
+    public ZoneAwareWhitelistLogoutHandler(MultitenantClientServices clientDetailsService, IdentityZoneManager identityZoneManager) {
         this.clientDetailsService = clientDetailsService;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -44,11 +46,11 @@ public class ZoneAwareWhitelistLogoutHandler implements LogoutSuccessHandler {
     }
 
     protected WhitelistLogoutHandler getZoneHandler() {
-        IdentityZoneConfiguration config = IdentityZoneHolder.get().getConfig();
+        IdentityZoneConfiguration config = identityZoneManager.getCurrentIdentityZone().getConfig();
         if (config==null) {
             config = new IdentityZoneConfiguration();
         }
-        WhitelistLogoutHandler handler = new WhitelistLogoutHandler(config.getLinks().getLogout().getWhitelist());
+        WhitelistLogoutHandler handler = new WhitelistLogoutHandler(config.getLinks().getLogout().getWhitelist(), identityZoneManager);
         handler.setTargetUrlParameter(config.getLinks().getLogout().getRedirectParameterName());
         handler.setDefaultTargetUrl(config.getLinks().getLogout().getRedirectUrl());
         handler.setAlwaysUseDefaultTargetUrl(config.getLinks().getLogout().isDisableRedirectParameter());

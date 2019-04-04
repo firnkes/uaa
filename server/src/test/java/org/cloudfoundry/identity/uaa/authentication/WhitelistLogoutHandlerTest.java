@@ -15,6 +15,7 @@
 package org.cloudfoundry.identity.uaa.authentication;
 
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -40,7 +41,7 @@ public class WhitelistLogoutHandlerTest {
 
     @Before
     public void setUp() {
-        handler = new WhitelistLogoutHandler(EMPTY_LIST);
+        handler = new WhitelistLogoutHandler(EMPTY_LIST, new IdentityZoneManagerImpl());
         handler.setDefaultTargetUrl("/login");
         handler.setAlwaysUseDefaultTargetUrl(true);
         handler.setTargetUrlParameter("redirect");

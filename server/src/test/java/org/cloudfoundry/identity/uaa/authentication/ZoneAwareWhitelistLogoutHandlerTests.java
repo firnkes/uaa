@@ -18,6 +18,7 @@ import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneConfiguration;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +54,7 @@ public class ZoneAwareWhitelistLogoutHandlerTests {
             .setDisableRedirectParameter(true)
             .setRedirectParameterName("redirect");
         when(clientDetailsService.loadClientByClientId(CLIENT_ID, "uaa")).thenReturn(client);
-        handler = new ZoneAwareWhitelistLogoutHandler(clientDetailsService);
+        handler = new ZoneAwareWhitelistLogoutHandler(clientDetailsService, new IdentityZoneManagerImpl());
         IdentityZoneHolder.get().setConfig(configuration);
     }
 

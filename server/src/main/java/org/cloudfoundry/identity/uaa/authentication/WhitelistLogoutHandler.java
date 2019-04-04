@@ -1,9 +1,9 @@
 package org.cloudfoundry.identity.uaa.authentication;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.security.oauth2.provider.NoSuchClientException;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
@@ -23,11 +23,13 @@ public final class WhitelistLogoutHandler extends SimpleUrlLogoutSuccessHandler 
     private static final Logger logger = LoggerFactory.getLogger(WhitelistLogoutHandler.class);
 
     private List<String> whitelist = null;
+    private final IdentityZoneManager identityZoneManager;
 
     private MultitenantClientServices clientDetailsService;
 
-    public WhitelistLogoutHandler(List<String> whitelist) {
+    public WhitelistLogoutHandler(List<String> whitelist, IdentityZoneManager identityZoneManager) {
         this.whitelist = whitelist;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -53,7 +55,7 @@ public final class WhitelistLogoutHandler extends SimpleUrlLogoutSuccessHandler 
 
         if (StringUtils.hasText(clientId)) {
             try {
-                ClientDetails client = clientDetailsService.loadClientByClientId(clientId, IdentityZoneHolder.get().getId());
+                ClientDetails client = clientDetailsService.loadClientByClientId(clientId, identityZoneManager.getCurrentIdentityZone().getId());
                 redirectUris = client.getRegisteredRedirectUri();
             } catch (NoSuchClientException x) {
                 logger.debug(String.format("Unable to find client with ID:%s for logout redirect", clientId));

@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.audit.event;
 
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.audit.AuditEvent;
@@ -24,8 +24,8 @@ import org.springframework.security.core.Authentication;
 public class ApprovalModifiedEvent extends AbstractUaaEvent {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public ApprovalModifiedEvent(Object source, Authentication authentication) {
-        super(source, authentication, IdentityZoneHolder.getCurrentZoneId());
+    public ApprovalModifiedEvent(Object source, Authentication authentication, IdentityZoneManager identityZoneManager) {
+        super(source, authentication, identityZoneManager.getCurrentIdentityZoneId());
         if (!Approval.class.isAssignableFrom(source.getClass())) {
             throw new IllegalArgumentException();
         }

@@ -14,6 +14,7 @@
 package org.cloudfoundry.identity.uaa.authentication;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.codestore.ExpiringCode;
@@ -23,7 +24,6 @@ import org.cloudfoundry.identity.uaa.login.PasscodeInformation;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -65,14 +65,14 @@ public class PasscodeAuthenticationFilter extends BackwardsCompatibleTokenEndpoi
 
     private List<String> parameterNames = Collections.emptyList();
 
-    public PasscodeAuthenticationFilter(UaaUserDatabase uaaUserDatabase, AuthenticationManager authenticationManager, OAuth2RequestFactory oAuth2RequestFactory, ExpiringCodeStore expiringCodeStore) {
+    public PasscodeAuthenticationFilter(UaaUserDatabase uaaUserDatabase, AuthenticationManager authenticationManager, OAuth2RequestFactory oAuth2RequestFactory, ExpiringCodeStore expiringCodeStore, IdentityZoneManager identityZoneManager) {
         super(
             new ExpiringCodeAuthenticationManager(
                 uaaUserDatabase,
                 authenticationManager,
                 LoggerFactory.getLogger(PasscodeAuthenticationFilter.class),
                 expiringCodeStore,
-                Collections.singleton(HttpMethod.POST.toString())),
+                Collections.singleton(HttpMethod.POST.toString()), identityZoneManager),
             oAuth2RequestFactory);
     }
 
@@ -160,17 +160,19 @@ public class PasscodeAuthenticationFilter extends BackwardsCompatibleTokenEndpoi
         private final Set<String> methods;
         private final AuthenticationManager parent;
         private final UaaUserDatabase uaaUserDatabase;
+        private final IdentityZoneManager identityZoneManager;
 
-        public ExpiringCodeAuthenticationManager(UaaUserDatabase uaaUserDatabase, AuthenticationManager parent, Logger logger, ExpiringCodeStore expiringCodeStore, Set<String> methods) {
+        public ExpiringCodeAuthenticationManager(UaaUserDatabase uaaUserDatabase, AuthenticationManager parent, Logger logger, ExpiringCodeStore expiringCodeStore, Set<String> methods, IdentityZoneManager identityZoneManager) {
             this.logger = logger;
             this.expiringCodeStore = expiringCodeStore;
             this.methods = methods;
             this.parent = parent;
             this.uaaUserDatabase = uaaUserDatabase;
+            this.identityZoneManager = identityZoneManager;
         }
 
         protected ExpiringCode doRetrieveCode(String code) {
-            return expiringCodeStore.retrieveCode(code, IdentityZoneHolder.get().getId());
+            return expiringCodeStore.retrieveCode(code, identityZoneManager.getCurrentIdentityZone().getId());
         }
 
         @Override
@@ -211,7 +213,7 @@ public class PasscodeAuthenticationFilter extends BackwardsCompatibleTokenEndpoi
                     externalAuthorities = (Collection<GrantedAuthority>) pi.getAuthorizationParameters().get("authorities");
                 }
                 UaaPrincipal principal = new UaaPrincipal(pi.getUserId(), pi.getUsername(), null, pi.getOrigin(), null,
-                    IdentityZoneHolder.get().getId());
+                    identityZoneManager.getCurrentIdentityZone().getId());
                 List<? extends GrantedAuthority> authorities;
                 try {
                     UaaUser user = uaaUserDatabase.retrieveUserById(pi.getUserId());
