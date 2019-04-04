@@ -26,7 +26,7 @@ import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
 import org.cloudfoundry.identity.uaa.util.ObjectUtils;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -49,23 +49,26 @@ public class DynamicZoneAwareAuthenticationManager implements AuthenticationMana
     private final ScimGroupExternalMembershipManager scimGroupExternalMembershipManager;
     private final ScimGroupProvisioning scimGroupProvisioning;
     private final LdapLoginAuthenticationManager ldapLoginAuthenticationManager;
+    private final IdentityZoneManager identityZoneManager;
     private ApplicationEventPublisher eventPublisher;
 
     public DynamicZoneAwareAuthenticationManager(IdentityProviderProvisioning provisioning,
                                                  AuthenticationManager internalUaaAuthenticationManager,
                                                  ScimGroupExternalMembershipManager scimGroupExternalMembershipManager,
                                                  ScimGroupProvisioning scimGroupProvisioning,
-                                                 LdapLoginAuthenticationManager ldapLoginAuthenticationManager) {
+                                                 LdapLoginAuthenticationManager ldapLoginAuthenticationManager,
+                                                 IdentityZoneManager identityZoneManager) {
         this.provisioning = provisioning;
         this.internalUaaAuthenticationManager = internalUaaAuthenticationManager;
         this.scimGroupExternalMembershipManager = scimGroupExternalMembershipManager;
         this.scimGroupProvisioning = scimGroupProvisioning;
         this.ldapLoginAuthenticationManager = ldapLoginAuthenticationManager;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        IdentityZone zone = IdentityZoneHolder.get();
+        IdentityZone zone = identityZoneManager.getCurrentIdentityZone();
         //chain it exactly like the UAA
         UaaLoginHint loginHint = extractLoginHint(authentication);
         return getChainedAuthenticationManager(zone, loginHint).authenticate(authentication);
@@ -155,7 +158,7 @@ public class DynamicZoneAwareAuthenticationManager implements AuthenticationMana
         ldapMgr = new DynamicLdapAuthenticationManager(definition,
             scimGroupExternalMembershipManager,
             scimGroupProvisioning,
-            ldapLoginAuthenticationManager);
+            ldapLoginAuthenticationManager, identityZoneManager);
         ldapMgr.setApplicationEventPublisher(eventPublisher);
         ldapAuthManagers.putIfAbsent(zone, ldapMgr);
         return ldapAuthManagers.get(zone);

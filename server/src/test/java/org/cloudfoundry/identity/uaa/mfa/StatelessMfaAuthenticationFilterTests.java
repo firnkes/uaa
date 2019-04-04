@@ -48,6 +48,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
 
 import com.jayway.jsonassert.JsonAssert;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -162,7 +163,7 @@ public class StatelessMfaAuthenticationFilterTests {
         when(timeService.getCurrentTimeMillis()).thenReturn(1l);
 
         boolean mfaLockoutPolicyEnabled = true;
-        commonLoginPolicy = new CommonLoginPolicy(jdbcAuditServiceMock, lockoutPolicyRetriever, AuditEventType.MfaAuthenticationSuccess, AuditEventType.MfaAuthenticationFailure, timeService, mfaLockoutPolicyEnabled);
+        commonLoginPolicy = new CommonLoginPolicy(jdbcAuditServiceMock, lockoutPolicyRetriever, AuditEventType.MfaAuthenticationSuccess, AuditEventType.MfaAuthenticationFailure, timeService, mfaLockoutPolicyEnabled, new IdentityZoneManagerImpl());
 
         filter = new StatelessMfaAuthenticationFilter(googleAuthenticator, grantTypes, mfaProvider, userDatabase, commonLoginPolicy);
         filter.setApplicationEventPublisher(publisher);
@@ -347,7 +348,7 @@ public class StatelessMfaAuthenticationFilterTests {
     @Test
     public void when_valid_mfa_auth_code_given_but_mfa_policy_is_disabled_should_not_fail() {
         boolean mfaPolicyEnabled = false;
-        commonLoginPolicy = new CommonLoginPolicy(jdbcAuditServiceMock, lockoutPolicyRetriever, AuditEventType.MfaAuthenticationSuccess, AuditEventType.MfaAuthenticationFailure, timeService, mfaPolicyEnabled);
+        commonLoginPolicy = new CommonLoginPolicy(jdbcAuditServiceMock, lockoutPolicyRetriever, AuditEventType.MfaAuthenticationSuccess, AuditEventType.MfaAuthenticationFailure, timeService, mfaPolicyEnabled, new IdentityZoneManagerImpl());
         filter = new StatelessMfaAuthenticationFilter(googleAuthenticator, grantTypes, mfaProvider, userDatabase, commonLoginPolicy);
         filter.setApplicationEventPublisher(publisher);
 

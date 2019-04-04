@@ -17,7 +17,7 @@ package org.cloudfoundry.identity.uaa.authentication.manager;
 
 import org.cloudfoundry.identity.uaa.provider.IdentityProvider;
 import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderNotFoundException;
@@ -29,11 +29,13 @@ public class CheckIdpEnabledAuthenticationManager implements AuthenticationManag
     private final String origin;
     private final IdentityProviderProvisioning identityProviderProvisioning;
     private final AuthenticationManager delegate;
+    private final IdentityZoneManager identityZoneManager;
 
-    public CheckIdpEnabledAuthenticationManager(AuthenticationManager delegate, String origin, IdentityProviderProvisioning identityProviderProvisioning) {
+    public CheckIdpEnabledAuthenticationManager(AuthenticationManager delegate, String origin, IdentityProviderProvisioning identityProviderProvisioning, IdentityZoneManager identityZoneManager) {
         this.origin = origin;
         this.identityProviderProvisioning = identityProviderProvisioning;
         this.delegate = delegate;
+        this.identityZoneManager = identityZoneManager;
     }
 
     public String getOrigin() {
@@ -43,7 +45,7 @@ public class CheckIdpEnabledAuthenticationManager implements AuthenticationManag
     @Override
     public Authentication authenticate(final Authentication authentication) throws AuthenticationException {
         try {
-            IdentityProvider idp = identityProviderProvisioning.retrieveByOriginIgnoreActiveFlag(getOrigin(), IdentityZoneHolder.get().getId());
+            IdentityProvider idp = identityProviderProvisioning.retrieveByOriginIgnoreActiveFlag(getOrigin(), identityZoneManager.getCurrentIdentityZone().getId());
             if (!idp.isActive()) {
                 throw new ProviderNotFoundException("Identity Provider \"" + idp.getName() + "\" has been disabled by administrator.");
             }

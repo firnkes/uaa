@@ -18,22 +18,24 @@ import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
 import org.cloudfoundry.identity.uaa.provider.LockoutPolicy;
 import org.cloudfoundry.identity.uaa.provider.UaaIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.util.ObjectUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 
 
 public class UserLockoutPolicyRetriever implements LockoutPolicyRetriever {
     
     private final IdentityProviderProvisioning providerProvisioning;
-    
+    private final IdentityZoneManager identityZoneManager;
+
     private LockoutPolicy defaultLockoutPolicy;
     
-    public UserLockoutPolicyRetriever(IdentityProviderProvisioning providerProvisioning) {
+    public UserLockoutPolicyRetriever(IdentityProviderProvisioning providerProvisioning, IdentityZoneManager identityZoneManager) {
         this.providerProvisioning = providerProvisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
     public LockoutPolicy getLockoutPolicy() {
-        IdentityProvider idp = providerProvisioning.retrieveByOrigin(OriginKeys.UAA, IdentityZoneHolder.get().getId());
+        IdentityProvider idp = providerProvisioning.retrieveByOrigin(OriginKeys.UAA, identityZoneManager.getCurrentIdentityZone().getId());
         UaaIdentityProviderDefinition idpDefinition = ObjectUtils.castInstance(idp.getConfig(), UaaIdentityProviderDefinition.class);
         if (idpDefinition != null && idpDefinition.getLockoutPolicy() !=null ) {
             return idpDefinition.getLockoutPolicy();

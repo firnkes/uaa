@@ -6,6 +6,7 @@ import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -56,7 +57,7 @@ public class IdentityProviderEndpointsTest {
 
         configValidator = mock(IdentityProviderConfigValidationDelegator.class);
         identityProviderProvisioning = mock(IdentityProviderProvisioning.class);
-        identityProviderEndpoints = new IdentityProviderEndpoints(identityProviderProvisioning, scimGroupExternalMembershipManager, scimGroupProvisioning, samlConfigurator, configValidator);
+        identityProviderEndpoints = new IdentityProviderEndpoints(identityProviderProvisioning, scimGroupExternalMembershipManager, scimGroupProvisioning, samlConfigurator, configValidator, new IdentityZoneManagerImpl());
     }
 
     public IdentityProvider<AbstractXOAuthIdentityProviderDefinition> getXOAuthProvider() {

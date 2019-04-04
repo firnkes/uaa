@@ -14,6 +14,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.user.UserInfo;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,7 +107,7 @@ class LdapLoginAuthenticationManagerTests {
 
         dbUser = getUaaUser();
         provisioning = mock(IdentityProviderProvisioning.class);
-        am = new LdapLoginAuthenticationManager(provisioning);
+        am = new LdapLoginAuthenticationManager(provisioning, new IdentityZoneManagerImpl());
         publisher = mock(ApplicationEventPublisher.class);
         am.setApplicationEventPublisher(publisher);
         am.setOrigin(origin);

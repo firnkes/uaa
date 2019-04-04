@@ -7,7 +7,7 @@ import org.cloudfoundry.identity.uaa.provider.LdapIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
 import org.cloudfoundry.identity.uaa.util.LdapUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationEvent;
@@ -29,6 +29,7 @@ public class DynamicLdapAuthenticationManager implements AuthenticationManager {
     private ScimGroupExternalMembershipManager scimGroupExternalMembershipManager;
     private ScimGroupProvisioning scimGroupProvisioning;
     private LdapLoginAuthenticationManager ldapLoginAuthenticationManager;
+    private final IdentityZoneManager identityZoneManager;
     private AuthenticationManager manager;
     private AuthenticationManager ldapManagerActual;
     private ApplicationEventPublisher eventPublisher;
@@ -37,11 +38,12 @@ public class DynamicLdapAuthenticationManager implements AuthenticationManager {
     public DynamicLdapAuthenticationManager(LdapIdentityProviderDefinition definition,
                                             ScimGroupExternalMembershipManager scimGroupExternalMembershipManager,
                                             ScimGroupProvisioning scimGroupProvisioning,
-                                            LdapLoginAuthenticationManager ldapLoginAuthenticationManager) {
+                                            LdapLoginAuthenticationManager ldapLoginAuthenticationManager, IdentityZoneManager identityZoneManager) {
         this.definition = definition;
         this.scimGroupExternalMembershipManager = scimGroupExternalMembershipManager;
         this.scimGroupProvisioning = scimGroupProvisioning;
         this.ldapLoginAuthenticationManager = ldapLoginAuthenticationManager;
+        this.identityZoneManager = identityZoneManager;
     }
 
     public ClassPathXmlApplicationContext getContext() {
@@ -107,7 +109,7 @@ public class DynamicLdapAuthenticationManager implements AuthenticationManager {
             try {
                 return manager.authenticate(authentication);
             } catch (BadCredentialsException e) {
-                publish(new IdentityProviderAuthenticationFailureEvent(authentication, authentication.getName(), OriginKeys.LDAP, IdentityZoneHolder.getCurrentZoneId()));
+                publish(new IdentityProviderAuthenticationFailureEvent(authentication, authentication.getName(), OriginKeys.LDAP, identityZoneManager.getCurrentIdentityZoneId()));
                 throw e;
             }
         }

@@ -15,6 +15,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.user.UserInfo;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -105,7 +106,7 @@ public class ExternalLoginAuthenticationManagerTest  {
         inputAuth = mock(Authentication.class);
         when(inputAuth.getPrincipal()).thenReturn(userDetails);
 
-        manager = new ExternalLoginAuthenticationManager(null);
+        manager = new ExternalLoginAuthenticationManager(null, new IdentityZoneManagerImpl());
         setupManager();
     }
 
@@ -285,7 +286,7 @@ public class ExternalLoginAuthenticationManagerTest  {
         LdapUserDetails ldapUserDetails = mock(LdapUserDetails.class);
         mockUserDetails(ldapUserDetails);
         when(ldapUserDetails.getDn()).thenReturn(dn);
-        manager = new LdapLoginAuthenticationManager(null);
+        manager = new LdapLoginAuthenticationManager(null, new IdentityZoneManagerImpl());
         setupManager();
         manager.setProviderProvisioning(null);
         manager.setOrigin(origin);
@@ -309,7 +310,7 @@ public class ExternalLoginAuthenticationManagerTest  {
         LdapUserDetails ldapUserDetails = mock(LdapUserDetails.class);
         mockUserDetails(ldapUserDetails);
         when(ldapUserDetails.getDn()).thenReturn(dn);
-        manager = new LdapLoginAuthenticationManager(null) {
+        manager = new LdapLoginAuthenticationManager(null, new IdentityZoneManagerImpl()) {
             @Override
             protected boolean isAddNewShadowUser() {
                 return false;
@@ -346,7 +347,7 @@ public class ExternalLoginAuthenticationManagerTest  {
         ExtendedLdapUserImpl ldapUserDetails = new ExtendedLdapUserImpl(baseLdapUserDetails, ldapAttrs);
         ldapUserDetails.setMailAttributeName(ldapMailAttrName);
 
-        manager = new LdapLoginAuthenticationManager(null);
+        manager = new LdapLoginAuthenticationManager(null, new IdentityZoneManagerImpl());
         setupManager();
         manager.setProviderProvisioning(null);
         manager.setOrigin(origin);
@@ -377,7 +378,7 @@ public class ExternalLoginAuthenticationManagerTest  {
     public void testAuthenticateCreateUserWithUserDetailsPrincipal() throws Exception {
         String origin = LDAP;
 
-        manager = new LdapLoginAuthenticationManager(null);
+        manager = new LdapLoginAuthenticationManager(null, new IdentityZoneManagerImpl());
         setupManager();
         manager.setOrigin(origin);
         manager.setProviderProvisioning(null);
@@ -426,7 +427,7 @@ public class ExternalLoginAuthenticationManagerTest  {
         UaaUser updatedUser = new UaaUser(new UaaUserPrototype().withUsername(username).withId(userId).withOrigin(origin).withEmail(email));
         when(invitedUser.modifyUsername(username)).thenReturn(updatedUser);
 
-        manager = new LdapLoginAuthenticationManager(null);
+        manager = new LdapLoginAuthenticationManager(null, new IdentityZoneManagerImpl());
         setupManager();
         manager.setProviderProvisioning(null);
         manager.setOrigin(origin);
@@ -451,7 +452,7 @@ public class ExternalLoginAuthenticationManagerTest  {
 
     @Test
     public void testPopulateAttributesStoresCustomAttributesAndRoles() {
-        manager = new LdapLoginAuthenticationManager(null);
+        manager = new LdapLoginAuthenticationManager(null, new IdentityZoneManagerImpl());
         setupManager();
         manager.setOrigin(origin);
         IdentityProvider provider = mock(IdentityProvider.class);

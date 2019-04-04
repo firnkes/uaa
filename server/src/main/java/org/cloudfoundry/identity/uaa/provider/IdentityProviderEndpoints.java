@@ -13,19 +13,19 @@
  */
 package org.cloudfoundry.identity.uaa.provider;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.cloudfoundry.identity.uaa.audit.event.EntityDeletedEvent;
 import org.cloudfoundry.identity.uaa.authentication.manager.DynamicLdapAuthenticationManager;
 import org.cloudfoundry.identity.uaa.authentication.manager.LdapLoginAuthenticationManager;
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
-import org.cloudfoundry.identity.uaa.audit.event.EntityDeletedEvent;
 import org.cloudfoundry.identity.uaa.provider.saml.SamlIdentityProviderConfigurator;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.util.ObjectUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -74,9 +74,10 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     private final IdentityProviderProvisioning identityProviderProvisioning;
     private final ScimGroupExternalMembershipManager scimGroupExternalMembershipManager;
     private final ScimGroupProvisioning scimGroupProvisioning;
-    private final NoOpLdapLoginAuthenticationManager noOpManager = new NoOpLdapLoginAuthenticationManager();
+    private final NoOpLdapLoginAuthenticationManager noOpManager;
     private final SamlIdentityProviderConfigurator samlConfigurator;
     private final IdentityProviderConfigValidator configValidator;
+    private final IdentityZoneManager identityZoneManager;
     private ApplicationEventPublisher publisher = null;
 
     @Override
@@ -85,22 +86,25 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     }
 
     public IdentityProviderEndpoints(
-        IdentityProviderProvisioning identityProviderProvisioning,
-        ScimGroupExternalMembershipManager scimGroupExternalMembershipManager,
-        ScimGroupProvisioning scimGroupProvisioning,
-        SamlIdentityProviderConfigurator samlConfigurator,
-        IdentityProviderConfigValidator configValidator) {
+            IdentityProviderProvisioning identityProviderProvisioning,
+            ScimGroupExternalMembershipManager scimGroupExternalMembershipManager,
+            ScimGroupProvisioning scimGroupProvisioning,
+            SamlIdentityProviderConfigurator samlConfigurator,
+            IdentityProviderConfigValidator configValidator,
+            IdentityZoneManager identityZoneManager) {
         this.identityProviderProvisioning = identityProviderProvisioning;
         this.scimGroupExternalMembershipManager = scimGroupExternalMembershipManager;
         this.scimGroupProvisioning = scimGroupProvisioning;
         this.samlConfigurator = samlConfigurator;
         this.configValidator = configValidator;
+        this.identityZoneManager = identityZoneManager;
+        this.noOpManager = new NoOpLdapLoginAuthenticationManager(identityZoneManager);
     }
 
     @RequestMapping(method = POST)
     public ResponseEntity<IdentityProvider> createIdentityProvider(@RequestBody IdentityProvider body, @RequestParam(required = false, defaultValue = "false") boolean rawConfig) throws MetadataProviderException{
         body.setSerializeConfigRaw(rawConfig);
-        String zoneId = IdentityZoneHolder.get().getId();
+        String zoneId = identityZoneManager.getCurrentIdentityZone().getId();
         body.setIdentityZoneId(zoneId);
         try {
             configValidator.validate(body);
@@ -131,10 +135,10 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     @RequestMapping(value = "{id}", method = DELETE)
     @Transactional
     public ResponseEntity<IdentityProvider> deleteIdentityProvider(@PathVariable String id, @RequestParam(required = false, defaultValue = "false") boolean rawConfig) throws MetadataProviderException {
-        IdentityProvider existing = identityProviderProvisioning.retrieve(id, IdentityZoneHolder.get().getId());
+        IdentityProvider existing = identityProviderProvisioning.retrieve(id, identityZoneManager.getCurrentIdentityZone().getId());
         if (publisher!=null && existing!=null) {
             existing.setSerializeConfigRaw(rawConfig);
-            publisher.publishEvent(new EntityDeletedEvent<>(existing, SecurityContextHolder.getContext().getAuthentication(), IdentityZoneHolder.getCurrentZoneId()));
+            publisher.publishEvent(new EntityDeletedEvent<>(existing, SecurityContextHolder.getContext().getAuthentication(), identityZoneManager.getCurrentIdentityZoneId()));
             return new ResponseEntity<>(existing, OK);
         } else {
             return new ResponseEntity<>(UNPROCESSABLE_ENTITY);
@@ -145,7 +149,7 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     @RequestMapping(value = "{id}", method = PUT)
     public ResponseEntity<IdentityProvider> updateIdentityProvider(@PathVariable String id, @RequestBody IdentityProvider body, @RequestParam(required = false, defaultValue = "false") boolean rawConfig) throws MetadataProviderException {
         body.setSerializeConfigRaw(rawConfig);
-        String zoneId = IdentityZoneHolder.get().getId();
+        String zoneId = identityZoneManager.getCurrentIdentityZone().getId();
         IdentityProvider existing = identityProviderProvisioning.retrieve(id, zoneId);
         body.setId(id);
         body.setIdentityZoneId(zoneId);
@@ -172,7 +176,7 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
 
     @RequestMapping (value = "{id}/status", method = PATCH)
     public ResponseEntity<IdentityProviderStatus> updateIdentityProviderStatus(@PathVariable String id, @RequestBody IdentityProviderStatus body) {
-        String zoneId = IdentityZoneHolder.get().getId();
+        String zoneId = identityZoneManager.getCurrentIdentityZone().getId();
         IdentityProvider existing = identityProviderProvisioning.retrieve(id, zoneId);
         if(body.getRequirePasswordChange() == null || body.getRequirePasswordChange() != true) {
             logger.debug("Invalid payload. The property requirePasswordChangeRequired needs to be set");
@@ -196,7 +200,7 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     @RequestMapping(method = GET)
     public ResponseEntity<List<IdentityProvider>> retrieveIdentityProviders(@RequestParam(value = "active_only", required = false) String activeOnly, @RequestParam(required = false, defaultValue = "false") boolean rawConfig) {
         Boolean retrieveActiveOnly = Boolean.valueOf(activeOnly);
-        List<IdentityProvider> identityProviderList = identityProviderProvisioning.retrieveAll(retrieveActiveOnly, IdentityZoneHolder.get().getId());
+        List<IdentityProvider> identityProviderList = identityProviderProvisioning.retrieveAll(retrieveActiveOnly, identityZoneManager.getCurrentIdentityZone().getId());
         for(IdentityProvider idp : identityProviderList) {
             idp.setSerializeConfigRaw(rawConfig);
             redactSensitiveData(idp);
@@ -206,7 +210,7 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
 
     @RequestMapping(value = "{id}", method = GET)
     public ResponseEntity<IdentityProvider> retrieveIdentityProvider(@PathVariable String id, @RequestParam(required = false, defaultValue = "false") boolean rawConfig) {
-        IdentityProvider identityProvider = identityProviderProvisioning.retrieve(id, IdentityZoneHolder.get().getId());
+        IdentityProvider identityProvider = identityProviderProvisioning.retrieve(id, identityZoneManager.getCurrentIdentityZone().getId());
         identityProvider.setSerializeConfigRaw(rawConfig);
         redactSensitiveData(identityProvider);
         return new ResponseEntity<>(identityProvider, OK);
@@ -221,8 +225,8 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
             ObjectUtils.castInstance(body.getProvider().getConfig(),LdapIdentityProviderDefinition.class),
             scimGroupExternalMembershipManager,
             scimGroupProvisioning,
-            noOpManager
-        );
+            noOpManager,
+            identityZoneManager);
         try {
             //attempt authentication
             Authentication result = manager.authenticate(body.getCredentials());
@@ -275,8 +279,8 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     }
 
     protected static class NoOpLdapLoginAuthenticationManager extends LdapLoginAuthenticationManager {
-        public NoOpLdapLoginAuthenticationManager() {
-            super(null);
+        public NoOpLdapLoginAuthenticationManager(IdentityZoneManager identityZoneManager) {
+            super(null, identityZoneManager);
         }
 
         @Override
@@ -286,7 +290,7 @@ public class IdentityProviderEndpoints implements ApplicationEventPublisherAware
     }
 
     protected void patchSensitiveData(String id, IdentityProvider provider) {
-        String zoneId = IdentityZoneHolder.get().getId();
+        String zoneId = identityZoneManager.getCurrentIdentityZone().getId();
         if (provider.getConfig() == null) {
             return;
         }

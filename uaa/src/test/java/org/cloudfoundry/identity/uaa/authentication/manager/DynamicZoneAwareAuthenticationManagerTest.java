@@ -14,6 +14,7 @@ import org.cloudfoundry.identity.uaa.security.PollutionPreventionExtension;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -268,8 +269,8 @@ class DynamicZoneAwareAuthenticationManagerTest {
                 uaaAuthenticationMgr,
                 scimGroupExternalMembershipManager,
                 scimGroupProvisioning,
-                ldapLoginAuthenticationManager
-            ) {
+                ldapLoginAuthenticationManager,
+                    new IdentityZoneManagerImpl()) {
                 @Override
                 public DynamicLdapAuthenticationManager getLdapAuthenticationManager(IdentityZone zone, IdentityProvider provider) {
                     when(mockLdapManager.getDefinition()).thenReturn(ldapIdentityProviderDefinition);
@@ -283,8 +284,8 @@ class DynamicZoneAwareAuthenticationManagerTest {
                 uaaAuthenticationMgr,
                 scimGroupExternalMembershipManager,
                 scimGroupProvisioning,
-                ldapLoginAuthenticationManager
-            );
+                ldapLoginAuthenticationManager,
+                    new IdentityZoneManagerImpl());
         }
     }
 

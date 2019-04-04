@@ -6,6 +6,7 @@ import org.cloudfoundry.identity.uaa.audit.UaaAuditService;
 import org.cloudfoundry.identity.uaa.provider.LockoutPolicy;
 import org.cloudfoundry.identity.uaa.util.TimeService;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,12 +40,12 @@ public class CommonLoginPolicyTest {
         successEventType = AuditEventType.UserAuthenticationSuccess;
         failureEventType = AuditEventType.UserAuthenticationFailure;
 
-        commonLoginPolicy = new CommonLoginPolicy(auditService, lockoutPolicyRetriever, successEventType, failureEventType, timeService, enabled);
+        commonLoginPolicy = new CommonLoginPolicy(auditService, lockoutPolicyRetriever, successEventType, failureEventType, timeService, enabled, new IdentityZoneManagerImpl());
     }
 
     @Test
     public void test_is_disabled() throws Exception {
-        commonLoginPolicy = spy(new CommonLoginPolicy(auditService, lockoutPolicyRetriever, successEventType, failureEventType, timeService, false));
+        commonLoginPolicy = spy(new CommonLoginPolicy(auditService, lockoutPolicyRetriever, successEventType, failureEventType, timeService, false, new IdentityZoneManagerImpl()));
         LoginPolicy.Result result = commonLoginPolicy.isAllowed("principal");
         assertTrue(result.isAllowed());
         assertEquals(0, result.getFailureCount());

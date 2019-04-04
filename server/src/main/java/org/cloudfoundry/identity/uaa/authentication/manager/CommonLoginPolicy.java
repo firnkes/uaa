@@ -17,7 +17,7 @@ import org.cloudfoundry.identity.uaa.audit.AuditEventType;
 import org.cloudfoundry.identity.uaa.audit.UaaAuditService;
 import org.cloudfoundry.identity.uaa.provider.LockoutPolicy;
 import org.cloudfoundry.identity.uaa.util.TimeService;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 
 import java.util.List;
 
@@ -33,19 +33,22 @@ public class CommonLoginPolicy implements LoginPolicy {
     private final AuditEventType failureEventType;
     private final TimeService timeService;
     private final boolean enabled;
+    private final IdentityZoneManager identityZoneManager;
 
     public CommonLoginPolicy(UaaAuditService auditService,
                              LockoutPolicyRetriever lockoutPolicyRetriever,
                              AuditEventType successEventType,
                              AuditEventType failureEventType,
                              TimeService timeService,
-                             boolean enabled) {
+                             boolean enabled,
+                             IdentityZoneManager identityZoneManager) {
         this.auditService = auditService;
         this.lockoutPolicyRetriever = lockoutPolicyRetriever;
         this.successEventType = successEventType;
         this.failureEventType = failureEventType;
         this.timeService = timeService;
         this.enabled = enabled;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -55,7 +58,7 @@ public class CommonLoginPolicy implements LoginPolicy {
             LockoutPolicy lockoutPolicy = lockoutPolicyRetriever.getLockoutPolicy();
 
             long eventsAfter = timeService.getCurrentTimeMillis() - lockoutPolicy.getCountFailuresWithin() * 1000;
-            List<AuditEvent> events = auditService.find(principalId, eventsAfter, IdentityZoneHolder.get().getId());
+            List<AuditEvent> events = auditService.find(principalId, eventsAfter, identityZoneManager.getCurrentIdentityZone().getId());
 
             failureCount = sequentialFailureCount(events);
 

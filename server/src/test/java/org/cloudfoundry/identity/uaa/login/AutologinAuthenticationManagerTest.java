@@ -15,6 +15,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,7 +55,7 @@ class AutologinAuthenticationManagerTest {
         IdentityZoneHolder.clear();
         IdentityZoneHolder.setProvisioning(null);
         clientId = new RandomValueStringGenerator().generate();
-        manager = new AutologinAuthenticationManager();
+        manager = new AutologinAuthenticationManager(new IdentityZoneManagerImpl());
         codeStore = mock(ExpiringCodeStore.class);
         userDatabase = mock(UaaUserDatabase.class);
         clientDetailsService = mock(MultitenantClientServices.class);

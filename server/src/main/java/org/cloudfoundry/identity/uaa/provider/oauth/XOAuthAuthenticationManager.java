@@ -15,6 +15,7 @@ package org.cloudfoundry.identity.uaa.provider.oauth;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.codec.binary.Base64;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthentication;
@@ -41,7 +42,6 @@ import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.util.LinkedMaskingMultiValueMap;
 import org.cloudfoundry.identity.uaa.util.TokenValidation;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
@@ -121,8 +121,9 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
                                        RestTemplate trustingRestTemplate,
                                        RestTemplate nonTrustingRestTemplate,
                                        TokenEndpointBuilder tokenEndpointBuilder,
-                                       KeyInfoService keyInfoService) {
-        super(providerProvisioning);
+                                       KeyInfoService keyInfoService,
+                                       IdentityZoneManager identityZoneManager) {
+        super(providerProvisioning, identityZoneManager);
         this.trustingRestTemplate = trustingRestTemplate;
         this.nonTrustingRestTemplate = nonTrustingRestTemplate;
         this.tokenEndpointBuilder = tokenEndpointBuilder;
@@ -150,7 +151,7 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
             }
             //1. Check if issuer is registered provider
             try {
-                return ((XOAuthProviderConfigurator) getProviderProvisioning()).retrieveByIssuer(issuer, IdentityZoneHolder.get().getId());
+                return ((XOAuthProviderConfigurator) getProviderProvisioning()).retrieveByIssuer(issuer, getIdentityZoneManager().getCurrentIdentityZone().getId());
             } catch (IncorrectResultSizeDataAccessException x) {
                 logger.debug("No registered identity provider found for given issuer. Checking for uaa.");
             }
@@ -195,7 +196,7 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
         setOrigin(codeToken.getOrigin());
         if (provider == null) {
             try {
-                provider = getProviderProvisioning().retrieveByOrigin(getOrigin(), IdentityZoneHolder.get().getId());
+                provider = getProviderProvisioning().retrieveByOrigin(getOrigin(), getIdentityZoneManager().getCurrentIdentityZone().getId());
             } catch (EmptyResultDataAccessException e) {
                 logger.info("No provider found for given origin");
                 throw new InsufficientAuthenticationException("Could not resolve identity provider with given origin.");
@@ -236,7 +237,7 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
             ofNullable(attributeMappings).ifPresent(map -> authenticationData.setAttributeMappings(new HashMap<>(map)));
             return authenticationData;
         }
-        logger.debug("No identity provider found for origin:"+getOrigin()+" and zone:"+IdentityZoneHolder.get().getId());
+        logger.debug("No identity provider found for origin:"+getOrigin()+" and zone:"+getIdentityZoneManager().getCurrentIdentityZone().getId());
         return null;
     }
 
@@ -351,7 +352,7 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
                     .withOrigin(getOrigin())
                     .withExternalId((String) authenticationData.getClaims().get(SUB))
                     .withVerified(verified)
-                    .withZoneId(IdentityZoneHolder.get().getId())
+                    .withZoneId(getIdentityZoneManager().getCurrentIdentityZone().getId())
                     .withSalt(null)
                     .withPasswordLastModified(null));
         }
@@ -429,7 +430,7 @@ public class XOAuthAuthenticationManager extends ExternalLoginAuthenticationMana
         if (!super.isAddNewShadowUser()) {
             return false;
         }
-        IdentityProvider<AbstractXOAuthIdentityProviderDefinition> provider = getProviderProvisioning().retrieveByOrigin(getOrigin(), IdentityZoneHolder.get().getId());
+        IdentityProvider<AbstractXOAuthIdentityProviderDefinition> provider = getProviderProvisioning().retrieveByOrigin(getOrigin(), getIdentityZoneManager().getCurrentIdentityZone().getId());
         return provider.getConfig().isAddShadowUserOnLogin();
     }
 

@@ -23,6 +23,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.util.FakePasswordEncoder;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,7 +88,7 @@ class AuthzAuthenticationManagerTests {
         AccountLoginPolicy mockAccountLoginPolicy = mock(AccountLoginPolicy.class);
         when(mockAccountLoginPolicy.isAllowed(any(), any())).thenReturn(true);
 
-        mgr = new AuthzAuthenticationManager(db, encoder, providerProvisioning);
+        mgr = new AuthzAuthenticationManager(db, encoder, providerProvisioning, new IdentityZoneManagerImpl());
         mgr.setApplicationEventPublisher(publisher);
         mgr.setOrigin(OriginKeys.UAA);
         mgr.setAccountLoginPolicy(mockAccountLoginPolicy);

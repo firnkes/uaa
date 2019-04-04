@@ -25,6 +25,7 @@ import org.cloudfoundry.identity.uaa.util.TimeService;
 import org.cloudfoundry.identity.uaa.util.TimeServiceImpl;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.security.core.Authentication;
@@ -70,11 +71,11 @@ public class PeriodLockoutPolicyTests {
         lockoutPolicy.setCountFailuresWithin(ONE_HOUR);
         lockoutPolicy.setLockoutPeriodSeconds(ONE_HOUR);
         when(providerProvisioning.retrieveByOrigin(anyString(), anyString())).thenReturn(new IdentityProvider());
-        policyRetriever = new UserLockoutPolicyRetriever(providerProvisioning);
-        mfaPolicyRetriever = new UserLockoutPolicyRetriever(providerProvisioning);
+        policyRetriever = new UserLockoutPolicyRetriever(providerProvisioning, new IdentityZoneManagerImpl());
+        mfaPolicyRetriever = new UserLockoutPolicyRetriever(providerProvisioning, new IdentityZoneManagerImpl());
 
-        innerPolicy = new CommonLoginPolicy(as, policyRetriever, AuditEventType.UserAuthenticationSuccess, AuditEventType.UserAuthenticationFailure, timeService, true);
-        mfaInnerPolicy = new CommonLoginPolicy(as, policyRetriever, AuditEventType.MfaAuthenticationSuccess, AuditEventType.MfaAuthenticationFailure, timeService, true);
+        innerPolicy = new CommonLoginPolicy(as, policyRetriever, AuditEventType.UserAuthenticationSuccess, AuditEventType.UserAuthenticationFailure, timeService, true, new IdentityZoneManagerImpl());
+        mfaInnerPolicy = new CommonLoginPolicy(as, policyRetriever, AuditEventType.MfaAuthenticationSuccess, AuditEventType.MfaAuthenticationFailure, timeService, true, new IdentityZoneManagerImpl());
 
         policyRetriever.setDefaultLockoutPolicy(lockoutPolicy);
         mfaPolicyRetriever.setDefaultLockoutPolicy(lockoutPolicy);

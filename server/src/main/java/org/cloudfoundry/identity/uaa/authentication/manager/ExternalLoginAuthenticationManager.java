@@ -15,6 +15,7 @@
 
 package org.cloudfoundry.identity.uaa.authentication.manager;
 
+import org.apache.commons.lang.StringUtils;
 import org.cloudfoundry.identity.uaa.authentication.AccountNotPreCreatedException;
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthentication;
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthenticationDetails;
@@ -35,9 +36,7 @@ import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.user.UserInfo;
 import org.cloudfoundry.identity.uaa.user.VerifiableUser;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
-
-import org.apache.commons.lang.StringUtils;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
@@ -80,12 +79,14 @@ public class ExternalLoginAuthenticationManager<ExternalAuthenticationDetails> i
     private String origin = "unknown";
 
     private IdentityProviderProvisioning providerProvisioning;
+    private final IdentityZoneManager identityZoneManager;
 
     private ScimGroupExternalMembershipManager externalMembershipManager;
 
 
-    public ExternalLoginAuthenticationManager(IdentityProviderProvisioning providerProvisioning) {
+    public ExternalLoginAuthenticationManager(IdentityProviderProvisioning providerProvisioning, IdentityZoneManager identityZoneManager) {
         this.providerProvisioning = providerProvisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     public IdentityProviderProvisioning getProviderProvisioning() {
@@ -102,6 +103,10 @@ public class ExternalLoginAuthenticationManager<ExternalAuthenticationDetails> i
 
     public void setExternalMembershipManager(ScimGroupExternalMembershipManager externalMembershipManager) {
         this.externalMembershipManager = externalMembershipManager;
+    }
+
+    public IdentityZoneManager getIdentityZoneManager() {
+        return identityZoneManager;
     }
 
     public String getOrigin() {
@@ -171,7 +176,7 @@ public class ExternalLoginAuthenticationManager<ExternalAuthenticationDetails> i
         }
         UaaAuthentication success = new UaaAuthentication(new UaaPrincipal(user), user.getAuthorities(), uaaAuthenticationDetails);
         populateAuthenticationAttributes(success, request, authenticationData);
-        publish(new IdentityProviderAuthenticationSuccessEvent(user, success, user.getOrigin(), IdentityZoneHolder.getCurrentZoneId()));
+        publish(new IdentityProviderAuthenticationSuccessEvent(user, success, user.getOrigin(), identityZoneManager.getCurrentIdentityZoneId()));
         return success;
     }
 
@@ -187,7 +192,7 @@ public class ExternalLoginAuthenticationManager<ExternalAuthenticationDetails> i
         }
         authentication.getAuthenticationMethods().add("ext");
         if (authentication.getUserAttributes()!=null && authentication.getUserAttributes().size()>0 && getProviderProvisioning()!=null) {
-            IdentityProvider<ExternalIdentityProviderDefinition> provider = getProviderProvisioning().retrieveByOrigin(getOrigin(), IdentityZoneHolder.get().getId());
+            IdentityProvider<ExternalIdentityProviderDefinition> provider = getProviderProvisioning().retrieveByOrigin(getOrigin(), identityZoneManager.getCurrentIdentityZone().getId());
             if (provider.getConfig()!=null && provider.getConfig().isStoreCustomAttributes()) {
                 logger.debug("Storing custom attributes for user_id:"+authentication.getPrincipal().getId());
                 UserInfo userInfo = new UserInfo()
@@ -278,7 +283,7 @@ public class ExternalLoginAuthenticationManager<ExternalAuthenticationDetails> i
             .withModified(new Date())
             .withOrigin(getOrigin())
             .withExternalId(externalId)
-            .withZoneId(IdentityZoneHolder.get().getId())
+            .withZoneId(identityZoneManager.getCurrentIdentityZone().getId())
             .withPhoneNumber(phoneNumber);
 
         return new UaaUser(userPrototype);
@@ -314,7 +319,7 @@ public class ExternalLoginAuthenticationManager<ExternalAuthenticationDetails> i
         List<GrantedAuthority> result = new LinkedList<>();
         for (GrantedAuthority authority : authorities ) {
             String externalGroup = authority.getAuthority();
-            for (ScimGroupExternalMember internalGroup : externalMembershipManager.getExternalGroupMapsByExternalGroup(externalGroup, origin, IdentityZoneHolder.get().getId())) {
+            for (ScimGroupExternalMember internalGroup : externalMembershipManager.getExternalGroupMapsByExternalGroup(externalGroup, origin, identityZoneManager.getCurrentIdentityZone().getId())) {
                 result.add(new SimpleGrantedAuthority(internalGroup.getDisplayName()));
             }
         }

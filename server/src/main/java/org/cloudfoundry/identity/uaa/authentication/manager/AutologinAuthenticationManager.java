@@ -14,8 +14,6 @@
 package org.cloudfoundry.identity.uaa.authentication.manager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.authentication.AuthzAuthenticationRequest;
 import org.cloudfoundry.identity.uaa.authentication.InvalidCodeException;
 import org.cloudfoundry.identity.uaa.authentication.UaaAuthentication;
@@ -29,7 +27,9 @@ import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.zone.MultitenantClientServices;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -45,12 +45,16 @@ import java.util.Map;
  *
  */
 public class AutologinAuthenticationManager implements AuthenticationManager {
-
     private Logger logger = LoggerFactory.getLogger(getClass());
+    private final IdentityZoneManager identityZoneManager;
 
     private ExpiringCodeStore codeStore;
     private MultitenantClientServices clientDetailsService;
     private UaaUserDatabase userDatabase;
+
+    public AutologinAuthenticationManager(IdentityZoneManager identityZoneManager) {
+        this.identityZoneManager = identityZoneManager;
+    }
 
     public void setExpiringCodeStore(ExpiringCodeStore expiringCodeStore) {
         this.codeStore= expiringCodeStore;
@@ -65,7 +69,7 @@ public class AutologinAuthenticationManager implements AuthenticationManager {
     }
 
     public ExpiringCode doRetrieveCode(String code) {
-        return codeStore.retrieveCode(code, IdentityZoneHolder.get().getId());
+        return codeStore.retrieveCode(code, identityZoneManager.getCurrentIdentityZone().getId());
     }
 
 
@@ -105,7 +109,7 @@ public class AutologinAuthenticationManager implements AuthenticationManager {
         }
 
         try {
-            clientDetailsService.loadClientByClientId(clientId, IdentityZoneHolder.get().getId());
+            clientDetailsService.loadClientByClientId(clientId, identityZoneManager.getCurrentIdentityZone().getId());
         } catch (NoSuchClientException x) {
             throw new BadCredentialsException("Cannot redeem provided code for user, client is missing");
         }

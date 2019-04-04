@@ -3,6 +3,7 @@ package org.cloudfoundry.identity.uaa.authentication.manager;
 import org.cloudfoundry.identity.uaa.provider.LdapIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Test;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
@@ -40,7 +41,7 @@ public class DynamicLdapAuthenticationManagerTest {
             new DynamicLdapAuthenticationManager(ldapIdentityProviderDefinition,
                 scimGroupExternalMembershipManager,
                 scimGroupProvisioning,
-                ldapLoginAuthenticationManager)
+                ldapLoginAuthenticationManager, new IdentityZoneManagerImpl())
             .getLdapAuthenticationManager();
         assertNotNull(manager);
         assertTrue(manager instanceof ChainedAuthenticationManager);
