@@ -22,7 +22,7 @@ import org.cloudfoundry.identity.uaa.mfa.MfaChecker;
 import org.cloudfoundry.identity.uaa.scim.ScimUserProvisioning;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
 
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -33,12 +33,14 @@ public class AuthenticationSuccessListener implements ApplicationListener<Abstra
 
     private final ScimUserProvisioning scimUserProvisioning;
     private final MfaChecker checker;
+    private final IdentityZoneManager identityZoneManager;
     private ApplicationEventPublisher publisher;
 
     public AuthenticationSuccessListener(ScimUserProvisioning scimUserProvisioning,
-                                         MfaChecker checker) {
+                                         MfaChecker checker, IdentityZoneManager identityZoneManager) {
         this.scimUserProvisioning = scimUserProvisioning;
         this.checker = checker;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -49,7 +51,7 @@ public class AuthenticationSuccessListener implements ApplicationListener<Abstra
             IdentityProviderAuthenticationSuccessEvent passwordAuthEvent = (IdentityProviderAuthenticationSuccessEvent) event;
             UserAuthenticationSuccessEvent userEvent = new UserAuthenticationSuccessEvent(
                 passwordAuthEvent.getUser(),
-                (Authentication) passwordAuthEvent.getSource(), IdentityZoneHolder.getCurrentZoneId()
+                (Authentication) passwordAuthEvent.getSource(), identityZoneManager.getCurrentIdentityZoneId()
             );
             if (!checker.isMfaEnabledForZoneId(userEvent.getIdentityZoneId())) {
                 publisher.publishEvent(userEvent);
@@ -58,7 +60,7 @@ public class AuthenticationSuccessListener implements ApplicationListener<Abstra
             MfaAuthenticationSuccessEvent mfaEvent = (MfaAuthenticationSuccessEvent) event;
             UserAuthenticationSuccessEvent userEvent = new UserAuthenticationSuccessEvent(
                 mfaEvent.getUser(),
-                (Authentication) mfaEvent.getSource(), IdentityZoneHolder.getCurrentZoneId()
+                (Authentication) mfaEvent.getSource(), identityZoneManager.getCurrentIdentityZoneId()
             );
             publisher.publishEvent(userEvent);
         }

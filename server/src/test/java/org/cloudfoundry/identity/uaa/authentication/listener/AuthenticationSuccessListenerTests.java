@@ -11,6 +11,7 @@ import org.cloudfoundry.identity.uaa.scim.ScimUserProvisioning;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserPrototype;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,7 +39,7 @@ class AuthenticationSuccessListenerTests {
         mockApplicationEventPublisher = mock(ApplicationEventPublisher.class);
         mockMfaChecker = mock(MfaChecker.class);
         mockScimUserProvisioning = mock(ScimUserProvisioning.class);
-        listener = new AuthenticationSuccessListener(mockScimUserProvisioning, mockMfaChecker);
+        listener = new AuthenticationSuccessListener(mockScimUserProvisioning, mockMfaChecker, new IdentityZoneManagerImpl());
         listener.setApplicationEventPublisher(mockApplicationEventPublisher);
         id = "user-id";
         userPrototype = new UaaUserPrototype()
