@@ -79,7 +79,7 @@ public class LdapGroupMappingAuthorizationManagerTests extends JdbcTestBase {
 
         bootstrap = new ScimExternalGroupBootstrap(gDB, eDB, new IdentityZoneManagerImpl());
 
-        manager = new LdapGroupMappingAuthorizationManager();
+        manager = new LdapGroupMappingAuthorizationManager(new IdentityZoneManagerImpl());
         manager.setScimGroupProvisioning(gDB);
         manager.setExternalMembershipManager(eDB);
 

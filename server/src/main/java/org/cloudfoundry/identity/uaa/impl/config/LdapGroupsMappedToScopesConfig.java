@@ -4,6 +4,7 @@ import org.cloudfoundry.identity.uaa.authorization.LdapGroupMappingAuthorization
 import org.cloudfoundry.identity.uaa.provider.ldap.LdapGroupToScopesMapper;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
@@ -32,8 +33,8 @@ public class LdapGroupsMappedToScopesConfig {
   }
 
   @Bean
-  public LdapGroupMappingAuthorizationManager ldapGroupMappingAuthorizationManager(ScimGroupExternalMembershipManager externalMembershipManager, ScimGroupProvisioning provisioning) {
-    LdapGroupMappingAuthorizationManager ldapGroupMappingAuthorizationManager = new LdapGroupMappingAuthorizationManager();
+  public LdapGroupMappingAuthorizationManager ldapGroupMappingAuthorizationManager(ScimGroupExternalMembershipManager externalMembershipManager, ScimGroupProvisioning provisioning, IdentityZoneManager identityZoneManager) {
+    LdapGroupMappingAuthorizationManager ldapGroupMappingAuthorizationManager = new LdapGroupMappingAuthorizationManager(identityZoneManager);
     ldapGroupMappingAuthorizationManager.setExternalMembershipManager(externalMembershipManager);
     ldapGroupMappingAuthorizationManager.setScimGroupProvisioning(provisioning);
     return ldapGroupMappingAuthorizationManager;

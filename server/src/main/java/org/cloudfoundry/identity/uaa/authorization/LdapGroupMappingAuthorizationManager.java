@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.authorization;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
@@ -19,7 +20,6 @@ import org.cloudfoundry.identity.uaa.provider.ldap.extension.LdapAuthority;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMember;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupExternalMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupProvisioning;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -29,11 +29,16 @@ import java.util.Set;
 
 public class LdapGroupMappingAuthorizationManager implements ExternalGroupMappingAuthorizationManager {
 
+    private final IdentityZoneManager identityZoneManager;
     private ScimGroupExternalMembershipManager extMbrMgr;
 
     private ScimGroupProvisioning scimGroupProvisioning;
 
     private static final Logger logger = LoggerFactory.getLogger(LdapGroupMappingAuthorizationManager.class);
+
+    public LdapGroupMappingAuthorizationManager(IdentityZoneManager identityZoneManager) {
+        this.identityZoneManager = identityZoneManager;
+    }
 
     @Override
     public Set<? extends GrantedAuthority> findScopesFromAuthorities(Set<? extends GrantedAuthority> authorities) {
@@ -41,7 +46,7 @@ public class LdapGroupMappingAuthorizationManager implements ExternalGroupMappin
         for (GrantedAuthority a : authorities) {
             if (a instanceof LdapAuthority) {
                 LdapAuthority la = (LdapAuthority)a;
-                List<ScimGroupExternalMember> members = extMbrMgr.getExternalGroupMapsByExternalGroup(la.getDn(), OriginKeys.LDAP, IdentityZoneHolder.get().getId());
+                List<ScimGroupExternalMember> members = extMbrMgr.getExternalGroupMapsByExternalGroup(la.getDn(), OriginKeys.LDAP, identityZoneManager.getCurrentIdentityZone().getId());
                 for (ScimGroupExternalMember member : members) {
                     SimpleGrantedAuthority mapped = new SimpleGrantedAuthority(member.getDisplayName());
                     result.add(mapped);

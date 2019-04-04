@@ -22,6 +22,7 @@
               http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.2.xsd">
 
     <context:annotation-config />
+    <context:component-scan base-package="org.cloudfoundry.identity.uaa.zone.beans"/>
 
     <bean id="ldapGroupsMappedToScopesConfig" class="org.cloudfoundry.identity.uaa.impl.config.LdapGroupsMappedToScopesConfig" />
 
