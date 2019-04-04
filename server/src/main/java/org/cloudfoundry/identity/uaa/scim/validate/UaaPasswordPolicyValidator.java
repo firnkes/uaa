@@ -6,7 +6,7 @@ import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
 import org.cloudfoundry.identity.uaa.provider.PasswordPolicy;
 import org.cloudfoundry.identity.uaa.provider.UaaIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.scim.exception.InvalidPasswordException;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.passay.CharacterRule;
 import org.passay.EnglishCharacterData;
 import org.passay.LengthRule;
@@ -39,6 +39,7 @@ import static org.cloudfoundry.identity.uaa.util.PasswordValidatorUtil.validator
 public class UaaPasswordPolicyValidator implements PasswordValidator {
 
     private final IdentityProviderProvisioning provisioning;
+    private final IdentityZoneManager identityZoneManager;
     private final PasswordPolicy globalDefaultPolicy;
 
     public static final String DEFAULT_MESSAGE_PATH = "/messages.properties";
@@ -49,9 +50,10 @@ public class UaaPasswordPolicyValidator implements PasswordValidator {
             messageResolver = messageResolver(DEFAULT_MESSAGE_PATH);
     }
 
-    public UaaPasswordPolicyValidator(PasswordPolicy globalDefaultPolicy, IdentityProviderProvisioning provisioning) {
+    public UaaPasswordPolicyValidator(PasswordPolicy globalDefaultPolicy, IdentityProviderProvisioning provisioning, IdentityZoneManager identityZoneManager) {
         this.globalDefaultPolicy = globalDefaultPolicy;
         this.provisioning = provisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class UaaPasswordPolicyValidator implements PasswordValidator {
             password = "";
         }
 
-        IdentityProvider<UaaIdentityProviderDefinition> idp = provisioning.retrieveByOriginIgnoreActiveFlag(OriginKeys.UAA, IdentityZoneHolder.get().getId());
+        IdentityProvider<UaaIdentityProviderDefinition> idp = provisioning.retrieveByOriginIgnoreActiveFlag(OriginKeys.UAA, identityZoneManager.getCurrentIdentityZone().getId());
         if (idp==null) {
             //should never happen
             return;

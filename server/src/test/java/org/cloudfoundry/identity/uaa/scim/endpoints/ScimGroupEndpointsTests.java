@@ -13,6 +13,7 @@
 package org.cloudfoundry.identity.uaa.scim.endpoints;
 
 import org.cloudfoundry.identity.uaa.util.FakePasswordEncoder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
@@ -115,22 +116,22 @@ public class ScimGroupEndpointsTests extends JdbcTestBase {
         TestUtils.deleteFrom(dataSource, "users", "groups", "group_membership");
         JdbcTemplate template = jdbcTemplate;
         JdbcPagingListFactory pagingListFactory = new JdbcPagingListFactory(template, LimitSqlAdapterFactory.getLimitSqlAdapter());
-        dao = new JdbcScimGroupProvisioning(template, pagingListFactory);
+        dao = new JdbcScimGroupProvisioning(template, pagingListFactory, new IdentityZoneManagerImpl());
         udao = new JdbcScimUserProvisioning(template, pagingListFactory, new FakePasswordEncoder());
-        mm = new JdbcScimGroupMembershipManager(template);
+        mm = new JdbcScimGroupMembershipManager(template, new IdentityZoneManagerImpl());
         mm.setScimGroupProvisioning(dao);
         mm.setScimUserProvisioning(udao);
         IdentityZoneHolder.get().getConfig().getUserConfig().setDefaultGroups(asList("uaa.user"));
         dao.createOrGet(new ScimGroup(null, "uaa.user", IdentityZoneHolder.get().getId()), IdentityZoneHolder.get().getId());
 
-        em = new JdbcScimGroupExternalMembershipManager(template);
+        em = new JdbcScimGroupExternalMembershipManager(template, new IdentityZoneManagerImpl());
         em.setScimGroupProvisioning(dao);
 
-        endpoints = new ScimGroupEndpoints(dao, mm);
+        endpoints = new ScimGroupEndpoints(dao, mm, new IdentityZoneManagerImpl());
         endpoints.setExternalMembershipManager(em);
         endpoints.setGroupMaxCount(20);
 
-        userEndpoints = new ScimUserEndpoints();
+        userEndpoints = new ScimUserEndpoints(new IdentityZoneManagerImpl());
         userEndpoints.setUserMaxCount(5);
         userEndpoints.setScimUserProvisioning(udao);
         userEndpoints.setIdentityProviderProvisioning(mock(JdbcIdentityProviderProvisioning.class));
@@ -150,7 +151,7 @@ public class ScimGroupEndpointsTests extends JdbcTestBase {
                                         createMember(ScimGroupMember.Type.GROUP)))
                         );
 
-        externalGroupBootstrap = new ScimExternalGroupBootstrap(dao, em);
+        externalGroupBootstrap = new ScimExternalGroupBootstrap(dao, em, new IdentityZoneManagerImpl());
         externalGroupBootstrap.setAddNonExistingGroups(true);
 
         Map<String, Map<String, List>> externalGroups = new HashMap<>();
@@ -236,7 +237,7 @@ public class ScimGroupEndpointsTests extends JdbcTestBase {
     @Test
     public void testListGroupsWithAttributesWithoutMembersDoesNotQueryMembers() throws Exception {
         ScimGroupMembershipManager memberManager = mock(ScimGroupMembershipManager.class);
-        endpoints = new ScimGroupEndpoints(dao, memberManager);
+        endpoints = new ScimGroupEndpoints(dao, memberManager, new IdentityZoneManagerImpl());
         endpoints.setExternalMembershipManager(em);
         endpoints.setGroupMaxCount(20);
         validateSearchResults(endpoints.listGroups("id,displayName", "id pr", "created", "ascending", 1, 100), 11);
@@ -247,7 +248,7 @@ public class ScimGroupEndpointsTests extends JdbcTestBase {
     public void testListGroupsWithAttributesWithMembersDoesQueryMembers() throws Exception {
         ScimGroupMembershipManager memberManager = mock(ScimGroupMembershipManager.class);
         when(memberManager.getMembers(anyString(), eq(false), eq("uaa"))).thenReturn(Collections.emptyList());
-        endpoints = new ScimGroupEndpoints(dao, memberManager);
+        endpoints = new ScimGroupEndpoints(dao, memberManager, new IdentityZoneManagerImpl());
         endpoints.setExternalMembershipManager(em);
         endpoints.setGroupMaxCount(20);
         validateSearchResults(endpoints.listGroups("id,displayName,members", "id pr", "created", "ascending", 1, 100), 11);

@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.scim.jdbc;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.audit.AuditEventType;
@@ -143,12 +144,12 @@ public class JdbcScimGroupProvisioning extends AbstractQueryable<ScimGroup>
 
     private final RowMapper<ScimGroup> rowMapper = new ScimGroupRowMapper();
 
-    public JdbcScimGroupProvisioning(JdbcTemplate jdbcTemplate, JdbcPagingListFactory pagingListFactory) {
+    public JdbcScimGroupProvisioning(JdbcTemplate jdbcTemplate, JdbcPagingListFactory pagingListFactory, IdentityZoneManager identityZoneManager) {
         super(jdbcTemplate, pagingListFactory, new ScimGroupRowMapper());
 
-        this.membershipManager = new JdbcScimGroupMembershipManager(jdbcTemplate);
+        this.membershipManager = new JdbcScimGroupMembershipManager(jdbcTemplate, identityZoneManager);
         this.membershipManager.setScimGroupProvisioning(this);
-        this.externalGroupMappingManager = new JdbcScimGroupExternalMembershipManager(jdbcTemplate);
+        this.externalGroupMappingManager = new JdbcScimGroupExternalMembershipManager(jdbcTemplate, identityZoneManager);
         this.externalGroupMappingManager.setScimGroupProvisioning(this);
 
         Assert.notNull(jdbcTemplate);

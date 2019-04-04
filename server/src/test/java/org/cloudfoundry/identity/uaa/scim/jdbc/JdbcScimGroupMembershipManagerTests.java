@@ -29,6 +29,7 @@ import org.cloudfoundry.identity.uaa.util.FakePasswordEncoder;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -93,9 +94,9 @@ public class JdbcScimGroupMembershipManagerTests extends JdbcTestBase {
 
         JdbcPagingListFactory pagingListFactory = new JdbcPagingListFactory(template, limitSqlAdapter);
         udao = new JdbcScimUserProvisioning(template, pagingListFactory, new FakePasswordEncoder());
-        gdao = new JdbcScimGroupProvisioning(template, pagingListFactory);
+        gdao = new JdbcScimGroupProvisioning(template, pagingListFactory, new IdentityZoneManagerImpl());
 
-        dao = new JdbcScimGroupMembershipManager(template);
+        dao = new JdbcScimGroupMembershipManager(template, new IdentityZoneManagerImpl());
         dao.setScimGroupProvisioning(gdao);
         dao.setScimUserProvisioning(udao);
         IdentityZoneHolder.get().getConfig().getUserConfig().setDefaultGroups(asList("uaa.user"));

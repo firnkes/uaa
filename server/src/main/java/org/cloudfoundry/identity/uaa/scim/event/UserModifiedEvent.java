@@ -19,7 +19,6 @@ import org.cloudfoundry.identity.uaa.audit.AuditEvent;
 import org.cloudfoundry.identity.uaa.audit.AuditEventType;
 import org.cloudfoundry.identity.uaa.audit.event.AbstractUaaEvent;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.security.core.Authentication;
 
 public class UserModifiedEvent extends AbstractUaaEvent {
@@ -46,45 +45,50 @@ public class UserModifiedEvent extends AbstractUaaEvent {
         this.email = email;
     }
 
-    public static UserModifiedEvent userCreated(String userId, String username) {
+    public static UserModifiedEvent userCreated(String userId, String username, String zoneId) {
         return new UserModifiedEvent(
             userId,
             username,
             AuditEventType.UserCreatedEvent,
-            getContextAuthentication(), IdentityZoneHolder.getCurrentZoneId());
+            getContextAuthentication(),
+            zoneId);
     }
 
-    public static UserModifiedEvent userModified(String userId, String username) {
+    public static UserModifiedEvent userModified(String userId, String username, String zoneId) {
         return new UserModifiedEvent(
             userId,
             username,
             AuditEventType.UserModifiedEvent,
-            getContextAuthentication(), IdentityZoneHolder.getCurrentZoneId());
+            getContextAuthentication(),
+            zoneId);
     }
 
-    public static UserModifiedEvent userDeleted(String userId, String username) {
+    public static UserModifiedEvent userDeleted(String userId, String username, String zoneId) {
         return new UserModifiedEvent(
             userId,
             username,
             AuditEventType.UserDeletedEvent,
-            getContextAuthentication(), IdentityZoneHolder.getCurrentZoneId());
+            getContextAuthentication(),
+            zoneId);
     }
 
-    public static UserModifiedEvent userVerified(String userId, String username) {
+    public static UserModifiedEvent userVerified(String userId, String username, String zoneId) {
         return new UserModifiedEvent(
             userId,
             username,
             AuditEventType.UserVerifiedEvent,
-            getContextAuthentication(), IdentityZoneHolder.getCurrentZoneId());
+            getContextAuthentication(),
+            zoneId);
     }
 
-    public static UserModifiedEvent emailChanged(String userId, String username, String email) {
+    public static UserModifiedEvent emailChanged(String userId, String username, String email, String zoneId) {
         return new UserModifiedEvent(
             userId,
             username,
             email,
             AuditEventType.EmailChangedEvent,
-            getContextAuthentication(), IdentityZoneHolder.getCurrentZoneId());
+            getContextAuthentication(),
+            zoneId);
     }
 
     @Override

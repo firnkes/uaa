@@ -108,7 +108,7 @@ class ScimUserEndpointsTests {
 
     @BeforeEach
     void setUp() {
-        endpoints = new ScimUserEndpoints();
+        endpoints = new ScimUserEndpoints(new IdentityZoneManagerImpl());
         endpoints.setUserMaxCount(5);
 
         IdentityZoneHolder.clear();
@@ -140,14 +140,14 @@ class ScimUserEndpointsTests {
             .when(mockPasswordValidator).validate(eq(""));
         endpoints.setPasswordValidator(mockPasswordValidator);
 
-        mm = new JdbcScimGroupMembershipManager(jdbcTemplate);
+        mm = new JdbcScimGroupMembershipManager(jdbcTemplate, new IdentityZoneManagerImpl());
         mm.setScimUserProvisioning(dao);
-        JdbcScimGroupProvisioning gdao = new JdbcScimGroupProvisioning(jdbcTemplate, pagingListFactory);
+        JdbcScimGroupProvisioning gdao = new JdbcScimGroupProvisioning(jdbcTemplate, pagingListFactory, new IdentityZoneManagerImpl());
         mm.setScimGroupProvisioning(gdao);
         IdentityZoneHolder.get().getConfig().getUserConfig().setDefaultGroups(asList("uaa.user"));
         gdao.createOrGet(new ScimGroup(null, "uaa.user", IdentityZoneHolder.get().getId()), IdentityZoneHolder.get().getId());
         endpoints.setScimGroupMembershipManager(mm);
-        groupEndpoints = new ScimGroupEndpoints(gdao, mm);
+        groupEndpoints = new ScimGroupEndpoints(gdao, mm, new IdentityZoneManagerImpl());
         groupEndpoints.setGroupMaxCount(5);
 
         joel = new ScimUser(null, "jdsa", "Joel", "D'sa");

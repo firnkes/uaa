@@ -23,6 +23,7 @@ import org.cloudfoundry.identity.uaa.util.FakePasswordEncoder;
 import org.cloudfoundry.identity.uaa.util.MapCollector;
 import org.cloudfoundry.identity.uaa.util.PredicateMatcher;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.core.env.MapPropertySource;
@@ -52,9 +53,9 @@ public class ScimGroupBootstrapTests extends JdbcTestBase {
     public void initScimGroupBootstrapTests() {
         JdbcTemplate template = jdbcTemplate;
         JdbcPagingListFactory pagingListFactory = new JdbcPagingListFactory(template, limitSqlAdapter);
-        gDB = new JdbcScimGroupProvisioning(template, pagingListFactory);
+        gDB = new JdbcScimGroupProvisioning(template, pagingListFactory, new IdentityZoneManagerImpl());
         uDB = new JdbcScimUserProvisioning(template, pagingListFactory, new FakePasswordEncoder());
-        mDB = new JdbcScimGroupMembershipManager(template);
+        mDB = new JdbcScimGroupMembershipManager(template, new IdentityZoneManagerImpl());
         mDB.setScimGroupProvisioning(gDB);
         mDB.setScimUserProvisioning(uDB);
 
@@ -72,7 +73,7 @@ public class ScimGroupBootstrapTests extends JdbcTestBase {
         assertEquals(7, uDB.retrieveAll(IdentityZone.getUaaZoneId()).size());
         assertEquals(0, gDB.retrieveAll(IdentityZone.getUaaZoneId()).size());
 
-        bootstrap = new ScimGroupBootstrap(gDB, uDB, mDB);
+        bootstrap = new ScimGroupBootstrap(gDB, uDB, mDB, new IdentityZoneManagerImpl());
     }
 
     @Test
@@ -106,7 +107,7 @@ public class ScimGroupBootstrapTests extends JdbcTestBase {
         when(gDB.getByName(anyString(), anyString())).thenReturn(multipleBootstrapGroupAfter);
 
         //second bootstrap
-        bootstrap = new ScimGroupBootstrap(gDB, uDB, mDB);
+        bootstrap = new ScimGroupBootstrap(gDB, uDB, mDB, new IdentityZoneManagerImpl());
         bootstrap.setGroups(StringUtils.commaDelimitedListToSet("multiple_bootstrap_group").stream().collect(new MapCollector<>(s -> s, s -> s)));
         bootstrap.afterPropertiesSet();
         

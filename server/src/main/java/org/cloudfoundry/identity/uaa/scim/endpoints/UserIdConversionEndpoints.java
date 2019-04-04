@@ -15,6 +15,7 @@ package org.cloudfoundry.identity.uaa.scim.endpoints;
 
 import com.unboundid.scim.sdk.SCIMException;
 import com.unboundid.scim.sdk.SCIMFilter;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.constants.OriginKeys;
@@ -25,7 +26,6 @@ import org.cloudfoundry.identity.uaa.security.DefaultSecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.provider.IdentityProvider;
 import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -57,11 +57,13 @@ public class UserIdConversionEndpoints implements InitializingBean {
     private ScimUserEndpoints scimUserEndpoints;
 
     private IdentityProviderProvisioning provisioning;
+    private final IdentityZoneManager identityZoneManager;
 
     private boolean enabled = true;
 
-    public UserIdConversionEndpoints(IdentityProviderProvisioning provisioning) {
+    public UserIdConversionEndpoints(IdentityProviderProvisioning provisioning, IdentityZoneManager identityZoneManager) {
         this.provisioning = provisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     void setSecurityContextAccessor(SecurityContextAccessor securityContextAccessor) {
@@ -104,7 +106,7 @@ public class UserIdConversionEndpoints implements InitializingBean {
         filter = filter.trim();
         checkFilter(filter);
 
-        List<IdentityProvider> activeIdentityProviders = provisioning.retrieveActive(IdentityZoneHolder.get().getId());
+        List<IdentityProvider> activeIdentityProviders = provisioning.retrieveActive(identityZoneManager.getCurrentIdentityZone().getId());
 
         if (!includeInactive) {
             if(activeIdentityProviders.isEmpty()) {

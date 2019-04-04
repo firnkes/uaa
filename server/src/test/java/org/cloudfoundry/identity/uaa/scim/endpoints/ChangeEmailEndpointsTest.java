@@ -9,6 +9,7 @@ import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.ScimUserProvisioning;
 import org.cloudfoundry.identity.uaa.scim.event.UserModifiedEvent;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +54,7 @@ public class ChangeEmailEndpointsTest extends TestClassNullifier {
         expiringCodeStore = Mockito.mock(ExpiringCodeStore.class);
         publisher = Mockito.mock(ApplicationEventPublisher.class);
         clientDetailsService = Mockito.mock(QueryableResourceManager.class);
-        ChangeEmailEndpoints changeEmailEndpoints = new ChangeEmailEndpoints(scimUserProvisioning, expiringCodeStore, clientDetailsService);
+        ChangeEmailEndpoints changeEmailEndpoints = new ChangeEmailEndpoints(scimUserProvisioning, expiringCodeStore, clientDetailsService, new IdentityZoneManagerImpl());
         changeEmailEndpoints.setApplicationEventPublisher(publisher);
         mockMvc = MockMvcBuilders.standaloneSetup(changeEmailEndpoints).build();
     }

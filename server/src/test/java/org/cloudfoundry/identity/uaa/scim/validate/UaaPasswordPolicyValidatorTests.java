@@ -11,6 +11,7 @@ import org.cloudfoundry.identity.uaa.scim.exception.InvalidPasswordException;
 import org.cloudfoundry.identity.uaa.security.PollutionPreventionExtension;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,7 @@ class UaaPasswordPolicyValidatorTests {
     @BeforeEach
     void setUp() {
         IdentityZoneHolder.set(IdentityZone.getUaa());
-        validator = new UaaPasswordPolicyValidator(defaultPolicy, provisioning);
+        validator = new UaaPasswordPolicyValidator(defaultPolicy, provisioning, new IdentityZoneManagerImpl());
 
         internalIDP = new IdentityProvider();
         policy = new PasswordPolicy(10, 23, 1, 1, 1, 1, 6);

@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.scim.bootstrap;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.scim.ScimCore;
@@ -25,7 +26,6 @@ import org.cloudfoundry.identity.uaa.scim.exception.MemberAlreadyExistsException
 import org.cloudfoundry.identity.uaa.scim.exception.ScimResourceNotFoundException;
 import org.cloudfoundry.identity.uaa.util.MapCollector;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.support.ResourcePropertySource;
@@ -52,6 +52,7 @@ public class ScimGroupBootstrap implements InitializingBean {
     private final ScimGroupProvisioning scimGroupProvisioning;
 
     private final ScimGroupMembershipManager membershipManager;
+    private final IdentityZoneManager identityZoneManager;
 
     private final ScimUserProvisioning scimUserProvisioning;
 
@@ -79,10 +80,11 @@ public class ScimGroupBootstrap implements InitializingBean {
     }
 
     public ScimGroupBootstrap(ScimGroupProvisioning scimGroupProvisioning, ScimUserProvisioning scimUserProvisioning,
-                    ScimGroupMembershipManager membershipManager) {
+                              ScimGroupMembershipManager membershipManager, IdentityZoneManager identityZoneManager) {
         this.scimGroupProvisioning = scimGroupProvisioning;
         this.scimUserProvisioning = scimUserProvisioning;
         this.membershipManager = membershipManager;
+        this.identityZoneManager = identityZoneManager;
         groups = new HashMap<>();
         groupMembers = new HashMap<>();
         groupAdmins = new HashMap<>();
@@ -188,7 +190,7 @@ public class ScimGroupBootstrap implements InitializingBean {
             if (StringUtils.hasText(description)) {
                 g.setDescription(description);
                 try{
-                    groupInfos.set(i, scimGroupProvisioning.update(g.getId(), g, IdentityZoneHolder.get().getId()));
+                    groupInfos.set(i, scimGroupProvisioning.update(g.getId(), g, identityZoneManager.getCurrentIdentityZone().getId()));
                 } catch(IncorrectResultSizeDataAccessException e) {
                     ScimGroup updatedGroup = getGroup(g.getDisplayName());
                     if(updatedGroup != null && updatedGroup.getVersion() > g.getVersion()) {
@@ -213,7 +215,7 @@ public class ScimGroupBootstrap implements InitializingBean {
 
         for (ScimGroupMember member : members) {
             try {
-                membershipManager.addMember(group.getId(), member, IdentityZoneHolder.get().getId());
+                membershipManager.addMember(group.getId(), member, identityZoneManager.getCurrentIdentityZone().getId());
             } catch (MemberAlreadyExistsException ex) {
                 logger.debug(member.getMemberId() + " already is member of group " + name);
             }
@@ -252,7 +254,7 @@ public class ScimGroupBootstrap implements InitializingBean {
     }
 
     private ScimUser getUser(String name) {
-        List<ScimUser> user = scimUserProvisioning.query(String.format(USER_BY_NAME_FILTER, name), IdentityZoneHolder.get().getId());
+        List<ScimUser> user = scimUserProvisioning.query(String.format(USER_BY_NAME_FILTER, name), identityZoneManager.getCurrentIdentityZone().getId());
         if (user != null && !user.isEmpty()) {
             return user.get(0);
         }
@@ -261,8 +263,8 @@ public class ScimGroupBootstrap implements InitializingBean {
 
     ScimGroup getGroup(String name) {
         try {
-            ScimGroup gr = scimGroupProvisioning.getByName(name, IdentityZoneHolder.get().getId());
-            gr.setMembers(membershipManager.getMembers(gr.getId(), false, IdentityZoneHolder.get().getId()));
+            ScimGroup gr = scimGroupProvisioning.getByName(name, identityZoneManager.getCurrentIdentityZone().getId());
+            gr.setMembers(membershipManager.getMembers(gr.getId(), false, identityZoneManager.getCurrentIdentityZone().getId()));
             return gr;
         } catch (ScimResourceNotFoundException | IncorrectResultSizeDataAccessException e) {
             logger.debug("could not find group with name");

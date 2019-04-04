@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.scim.jdbc;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.scim.ScimGroup;
@@ -29,7 +30,6 @@ import org.cloudfoundry.identity.uaa.util.TimeBasedExpiringValueMap;
 import org.cloudfoundry.identity.uaa.util.TimeService;
 import org.cloudfoundry.identity.uaa.util.TimeServiceImpl;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneProvisioning;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DuplicateKeyException;
@@ -59,6 +59,7 @@ import static org.springframework.util.StringUtils.hasText;
 
 public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManager, InitializingBean {
 
+    private final IdentityZoneManager identityZoneManager;
     private JdbcTemplate jdbcTemplate;
 
     private TimeService timeService = new TimeServiceImpl();
@@ -114,7 +115,7 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
         if (!hasText(zoneId)) {
             return emptySet();
         }
-        IdentityZone currentZone = IdentityZoneHolder.get();
+        IdentityZone currentZone = identityZoneManager.getCurrentIdentityZone();
         List<String> zoneDefaultGroups = currentZone.getConfig().getUserConfig().getDefaultGroups();
         if (!zoneId.equals(currentZone.getId())) {
             zoneDefaultGroups = zoneProvisioning.retrieve(zoneId).getConfig().getUserConfig().getDefaultGroups();
@@ -152,9 +153,10 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
         this.timeService = timeService;
     }
 
-    public JdbcScimGroupMembershipManager(JdbcTemplate jdbcTemplate) {
+    public JdbcScimGroupMembershipManager(JdbcTemplate jdbcTemplate, IdentityZoneManager identityZoneManager) {
         Assert.notNull(jdbcTemplate);
         this.jdbcTemplate = jdbcTemplate;
+        this.identityZoneManager = identityZoneManager;
         rowMapper = new ScimGroupMemberRowMapper();
     }
 
@@ -206,10 +208,10 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
         if (includeEntities) {
             for (ScimGroupMember member : result) {
                 if (member.getType().equals(ScimGroupMember.Type.USER)) {
-                    ScimUser user = userProvisioning.retrieve(member.getMemberId(), IdentityZoneHolder.get().getId());
+                    ScimUser user = userProvisioning.retrieve(member.getMemberId(), identityZoneManager.getCurrentIdentityZone().getId());
                     member.setEntity(user);
                 } else if (member.getType().equals(ScimGroupMember.Type.GROUP)) {
-                    ScimGroup group = groupProvisioning.retrieve(member.getMemberId(), IdentityZoneHolder.get().getId());
+                    ScimGroup group = groupProvisioning.retrieve(member.getMemberId(), identityZoneManager.getCurrentIdentityZone().getId());
                     member.setEntity(group);
                 }
             }
@@ -249,7 +251,7 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
         for (String groupId : groupIds) {
             ScimGroup group;
             try {
-                group = groupProvisioning.retrieve(groupId, IdentityZoneHolder.get().getId());
+                group = groupProvisioning.retrieve(groupId, identityZoneManager.getCurrentIdentityZone().getId());
             } catch (ScimResourceNotFoundException ex) {
                 continue;
             }
@@ -271,7 +273,7 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
 
         try {
             results = jdbcTemplate.query(GET_GROUPS_BY_EXTERNAL_MEMBER_SQL, ps -> {
-                ps.setString(1, IdentityZoneHolder.get().getId());
+                ps.setString(1, identityZoneManager.getCurrentIdentityZone().getId());
                 ps.setString(2, memberId);
                 ps.setString(3, origin);
             }, new ScimGroupRowMapper());
@@ -395,7 +397,7 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
 
     private boolean isUser(String uuid) {
         try {
-            userProvisioning.retrieve(uuid, IdentityZoneHolder.get().getId());
+            userProvisioning.retrieve(uuid, identityZoneManager.getCurrentIdentityZone().getId());
             return true;
         } catch (ScimResourceNotFoundException ex) {
             return false;
@@ -415,14 +417,14 @@ public class JdbcScimGroupMembershipManager implements ScimGroupMembershipManage
 
         // check if the group exists and the member-id is a valid group or user
         // id
-        ScimGroup group = groupProvisioning.retrieve(groupId, IdentityZoneHolder.get().getId()); // this will throw a ScimException
+        ScimGroup group = groupProvisioning.retrieve(groupId, identityZoneManager.getCurrentIdentityZone().getId()); // this will throw a ScimException
         String memberZoneId;
                                              // if the group does not exist
         // this will throw a ScimException if the group or user does not exist
         if (member.getType() == ScimGroupMember.Type.GROUP) {
-            memberZoneId = groupProvisioning.retrieve(member.getMemberId(), IdentityZoneHolder.get().getId()).getZoneId();
+            memberZoneId = groupProvisioning.retrieve(member.getMemberId(), identityZoneManager.getCurrentIdentityZone().getId()).getZoneId();
         } else {
-            memberZoneId = userProvisioning.retrieve(member.getMemberId(), IdentityZoneHolder.get().getId()).getZoneId();
+            memberZoneId = userProvisioning.retrieve(member.getMemberId(), identityZoneManager.getCurrentIdentityZone().getId()).getZoneId();
         }
         if (!memberZoneId.equals(group.getZoneId())) {
             throw new ScimResourceConstraintFailedException("The zone of the group and the member must be the same.");

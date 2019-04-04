@@ -19,7 +19,7 @@ import org.cloudfoundry.identity.uaa.provider.UaaIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.util.ObjectUtils;
 import org.cloudfoundry.identity.uaa.web.ExceptionReport;
 import org.cloudfoundry.identity.uaa.web.ExceptionReportHttpMessageConverter;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -38,6 +38,7 @@ public class DisableUserManagementSecurityFilter extends OncePerRequestFilter {
 
     public static final String INTERNAL_USER_CREATION_IS_CURRENTLY_DISABLED = "Internal User Creation is currently disabled. External User Store is in use.";
     private final IdentityProviderProvisioning identityProviderProvisioning;
+    private final IdentityZoneManager identityZoneManager;
 
     private static String regex1 = "";
     static {
@@ -64,8 +65,9 @@ public class DisableUserManagementSecurityFilter extends OncePerRequestFilter {
     private Pattern pattern1 = Pattern.compile(regex1);
     private List<String> methods1 = Arrays.asList("GET", "POST", "PUT", "DELETE");
 
-    public DisableUserManagementSecurityFilter(IdentityProviderProvisioning identityProviderProvisioning) {
+    public DisableUserManagementSecurityFilter(IdentityProviderProvisioning identityProviderProvisioning, IdentityZoneManager identityZoneManager) {
         this.identityProviderProvisioning = identityProviderProvisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -73,7 +75,7 @@ public class DisableUserManagementSecurityFilter extends OncePerRequestFilter {
 
         try {
             if (matches(request)) {
-                IdentityProvider idp = identityProviderProvisioning.retrieveByOriginIgnoreActiveFlag(OriginKeys.UAA, IdentityZoneHolder.get().getId());
+                IdentityProvider idp = identityProviderProvisioning.retrieveByOriginIgnoreActiveFlag(OriginKeys.UAA, identityZoneManager.getCurrentIdentityZone().getId());
                 boolean isDisableInternalUserManagement = false;
                 UaaIdentityProviderDefinition config = ObjectUtils.castInstance(idp.getConfig(), UaaIdentityProviderDefinition.class);
                 if (config != null) {

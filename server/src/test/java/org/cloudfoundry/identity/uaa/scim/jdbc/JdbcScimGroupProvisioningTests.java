@@ -24,6 +24,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
 import org.cloudfoundry.identity.uaa.zone.ZoneManagementScopes;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.cloudfoundry.identity.uaa.zone.event.IdentityZoneModifiedEvent;
 import org.junit.After;
 import org.junit.Before;
@@ -88,8 +89,8 @@ public class JdbcScimGroupProvisioningTests extends JdbcTestBase {
 
         validateGroupCount(0);
 
-        memberships = new JdbcScimGroupMembershipManager(jdbcTemplate);
-        dao = spy(new JdbcScimGroupProvisioning(jdbcTemplate, new JdbcPagingListFactory(jdbcTemplate, limitSqlAdapter)));
+        memberships = new JdbcScimGroupMembershipManager(jdbcTemplate, new IdentityZoneManagerImpl());
+        dao = spy(new JdbcScimGroupProvisioning(jdbcTemplate, new JdbcPagingListFactory(jdbcTemplate, limitSqlAdapter), new IdentityZoneManagerImpl()));
         memberships.setScimGroupProvisioning(dao);
         users = mock(ScimUserProvisioning.class);
         memberships.setScimUserProvisioning(users);

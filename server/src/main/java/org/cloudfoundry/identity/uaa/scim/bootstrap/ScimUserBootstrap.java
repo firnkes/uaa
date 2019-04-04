@@ -30,8 +30,8 @@ import org.cloudfoundry.identity.uaa.scim.exception.MemberAlreadyExistsException
 import org.cloudfoundry.identity.uaa.scim.exception.MemberNotFoundException;
 import org.cloudfoundry.identity.uaa.scim.exception.ScimResourceNotFoundException;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -79,6 +79,7 @@ public class ScimUserBootstrap implements
     private final ScimGroupProvisioning scimGroupProvisioning;
 
     private final ScimGroupMembershipManager membershipManager;
+    private final IdentityZoneManager identityZoneManager;
 
     private boolean override = false;
 
@@ -104,7 +105,8 @@ public class ScimUserBootstrap implements
     public ScimUserBootstrap(ScimUserProvisioning scimUserProvisioning,
                              ScimGroupProvisioning scimGroupProvisioning,
                              ScimGroupMembershipManager membershipManager,
-                             Collection<UaaUser> users) {
+                             Collection<UaaUser> users,
+                             IdentityZoneManager identityZoneManager) {
         Assert.notNull(scimUserProvisioning, "scimUserProvisioning cannot be null");
         Assert.notNull(scimGroupProvisioning, "scimGroupProvisioning cannont be null");
         Assert.notNull(membershipManager, "memberShipManager cannot be null");
@@ -113,6 +115,7 @@ public class ScimUserBootstrap implements
         this.scimGroupProvisioning = scimGroupProvisioning;
         this.membershipManager = membershipManager;
         this.users = Collections.unmodifiableCollection(users);
+        this.identityZoneManager = identityZoneManager;
     }
 
     public void setUsersToDelete(List<String> usersToDelete) {
@@ -143,20 +146,20 @@ public class ScimUserBootstrap implements
                 filter.append(" or ");
             }
         }
-        List<ScimUser> list = scimUserProvisioning.query("origin eq \"uaa\" and (" + filter.toString() + ")", IdentityZoneHolder.get().getId());
+        List<ScimUser> list = scimUserProvisioning.query("origin eq \"uaa\" and (" + filter.toString() + ")", identityZoneManager.getCurrentIdentityZone().getId());
         for (ScimUser delete : list) {
-            publish(new EntityDeletedEvent<>(delete, SystemAuthentication.SYSTEM_AUTHENTICATION, IdentityZoneHolder.getCurrentZoneId()));
+            publish(new EntityDeletedEvent<>(delete, SystemAuthentication.SYSTEM_AUTHENTICATION, identityZoneManager.getCurrentIdentityZoneId()));
         }
     }
 
     protected ScimUser getScimUser(UaaUser user) {
         List<ScimUser> users = scimUserProvisioning.query("userName eq \"" + user.getUsername() + "\"" +
             " and origin eq \"" +
-            (user.getOrigin() == null ? OriginKeys.UAA : user.getOrigin()) + "\"", IdentityZoneHolder.get().getId());
+            (user.getOrigin() == null ? OriginKeys.UAA : user.getOrigin()) + "\"", identityZoneManager.getCurrentIdentityZone().getId());
 
         if (users.isEmpty() && StringUtils.hasText(user.getId())) {
             try {
-                users = Arrays.asList(scimUserProvisioning.retrieve(user.getId(), IdentityZoneHolder.get().getId()));
+                users = Arrays.asList(scimUserProvisioning.retrieve(user.getId(), identityZoneManager.getCurrentIdentityZone().getId()));
             } catch (ScimResourceNotFoundException x) {
                 logger.debug("Unable to find scim user based on ID:"+user.getId());
             }
@@ -196,7 +199,7 @@ public class ScimUserBootstrap implements
         logger.debug("Updating user account: " + updatedUser + " with SCIM Id: " + id);
         if (updateGroups) {
             logger.debug("Removing existing group memberships ...");
-            Set<ScimGroup> existingGroups = membershipManager.getGroupsWithMember(id, true, IdentityZoneHolder.get().getId());
+            Set<ScimGroup> existingGroups = membershipManager.getGroupsWithMember(id, true, identityZoneManager.getCurrentIdentityZone().getId());
 
             for (ScimGroup g : existingGroups) {
                 removeFromGroup(id, g.getDisplayName());
@@ -205,9 +208,9 @@ public class ScimUserBootstrap implements
 
         final ScimUser newScimUser = convertToScimUser(updatedUser);
         newScimUser.setVersion(existingUser.getVersion());
-        scimUserProvisioning.update(id, newScimUser, IdentityZoneHolder.get().getId());
+        scimUserProvisioning.update(id, newScimUser, identityZoneManager.getCurrentIdentityZone().getId());
         if (OriginKeys.UAA.equals(newScimUser.getOrigin()) && hasText(updatedUser.getPassword())) { //password is not relevant for non UAA users
-            scimUserProvisioning.changePassword(id, null, updatedUser.getPassword(), IdentityZoneHolder.get().getId());
+            scimUserProvisioning.changePassword(id, null, updatedUser.getPassword(), identityZoneManager.getCurrentIdentityZone().getId());
         }
         if (updateGroups) {
             Collection<String> newGroups = convertToGroups(updatedUser.getAuthorities());
@@ -218,7 +221,7 @@ public class ScimUserBootstrap implements
 
     private void createNewUser(UaaUser user) {
         logger.debug("Registering new user account: " + user);
-        ScimUser newScimUser = scimUserProvisioning.createUser(convertToScimUser(user), user.getPassword(), IdentityZoneHolder.get().getId());
+        ScimUser newScimUser = scimUserProvisioning.createUser(convertToScimUser(user), user.getPassword(), identityZoneManager.getCurrentIdentityZone().getId());
         addGroups(newScimUser.getId(), convertToGroups(user.getAuthorities()));
     }
 
@@ -299,21 +302,21 @@ public class ScimUserBootstrap implements
             return;
         }
         logger.debug("Adding to group: " + gName);
-        List<ScimGroup> g = scimGroupProvisioning.query(String.format("displayName eq \"%s\"", gName), IdentityZoneHolder.get().getId());
+        List<ScimGroup> g = scimGroupProvisioning.query(String.format("displayName eq \"%s\"", gName), identityZoneManager.getCurrentIdentityZone().getId());
         ScimGroup group;
         if ((g == null || g.isEmpty()) && (!addGroup)) {
             logger.debug("No group found with name:"+gName+". Group membership will not be added.");
             return;
         } else if (g == null || g.isEmpty()) {
-            group = new ScimGroup(null,gName,IdentityZoneHolder.get().getId());
-            group = scimGroupProvisioning.create(group, IdentityZoneHolder.get().getId());
+            group = new ScimGroup(null,gName,identityZoneManager.getCurrentIdentityZone().getId());
+            group = scimGroupProvisioning.create(group, identityZoneManager.getCurrentIdentityZone().getId());
         } else {
             group = g.get(0);
         }
         try {
             ScimGroupMember groupMember = new ScimGroupMember(scimUserId);
             groupMember.setOrigin(origin);
-            membershipManager.addMember(group.getId(), groupMember, IdentityZoneHolder.get().getId());
+            membershipManager.addMember(group.getId(), groupMember, identityZoneManager.getCurrentIdentityZone().getId());
         } catch (MemberAlreadyExistsException ex) {
             // do nothing
         }
@@ -324,7 +327,7 @@ public class ScimUserBootstrap implements
             return;
         }
         logger.debug("Removing membership of group: " + gName);
-        List<ScimGroup> g = scimGroupProvisioning.query(String.format("displayName eq \"%s\"", gName), IdentityZoneHolder.get().getId());
+        List<ScimGroup> g = scimGroupProvisioning.query(String.format("displayName eq \"%s\"", gName), identityZoneManager.getCurrentIdentityZone().getId());
         ScimGroup group;
         if (g == null || g.isEmpty()) {
             return;
@@ -333,7 +336,7 @@ public class ScimUserBootstrap implements
             group = g.get(0);
         }
         try {
-            membershipManager.removeMemberById(group.getId(), scimUserId, IdentityZoneHolder.get().getId());
+            membershipManager.removeMemberById(group.getId(), scimUserId, identityZoneManager.getCurrentIdentityZone().getId());
         } catch (MemberNotFoundException ex) {
             // do nothing
         }

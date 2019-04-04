@@ -15,7 +15,7 @@ package org.cloudfoundry.identity.uaa.scim.event;
 import org.cloudfoundry.identity.uaa.scim.ScimGroup;
 import org.cloudfoundry.identity.uaa.scim.ScimGroupMember;
 import org.cloudfoundry.identity.uaa.scim.ScimUser;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -24,38 +24,44 @@ import java.util.List;
 
 
 public class ScimEventPublisher implements ApplicationEventPublisherAware {
+    private final IdentityZoneManager identityZoneManager;
     private ApplicationEventPublisher publisher;
+
+    public ScimEventPublisher(IdentityZoneManager identityZoneManager) {
+        this.identityZoneManager = identityZoneManager;
+    }
+
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
         this.publisher = applicationEventPublisher;
     }
 
     public void userCreated(ScimUser user) {
-        publish(UserModifiedEvent.userCreated(user.getId(), user.getUserName()));
+        publish(UserModifiedEvent.userCreated(user.getId(), user.getUserName(), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public void userVerified(ScimUser user) {
-        publish(UserModifiedEvent.userVerified(user.getId(), user.getUserName()));
+        publish(UserModifiedEvent.userVerified(user.getId(), user.getUserName(), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public void userModified(ScimUser user) {
-        publish(UserModifiedEvent.userModified(user.getId(), user.getUserName()));
+        publish(UserModifiedEvent.userModified(user.getId(), user.getUserName(), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public void userDeleted(ScimUser user) {
-        publish(UserModifiedEvent.userDeleted(user.getId(), user.getUserName()));
+        publish(UserModifiedEvent.userDeleted(user.getId(), user.getUserName(), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public void groupCreated(ScimGroup group) {
-        publish(GroupModifiedEvent.groupCreated(group.getId(), group.getDisplayName(), getMembers(group), IdentityZoneHolder.getCurrentZoneId()));
+        publish(GroupModifiedEvent.groupCreated(group.getId(), group.getDisplayName(), getMembers(group), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public void groupModified(ScimGroup group) {
-        publish(GroupModifiedEvent.groupModified(group.getId(), group.getDisplayName(), getMembers(group), IdentityZoneHolder.getCurrentZoneId()));
+        publish(GroupModifiedEvent.groupModified(group.getId(), group.getDisplayName(), getMembers(group), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public void groupDeleted(ScimGroup group) {
-        publish(GroupModifiedEvent.groupDeleted(group.getId(), group.getDisplayName(), getMembers(group), IdentityZoneHolder.getCurrentZoneId()));
+        publish(GroupModifiedEvent.groupDeleted(group.getId(), group.getDisplayName(), getMembers(group), identityZoneManager.getCurrentIdentityZoneId()));
     }
 
     public static String[] getMembers(ScimGroup group) {

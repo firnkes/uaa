@@ -226,7 +226,7 @@ public class LoginSamlAuthenticationProviderTests extends JdbcTestBase {
         ServletWebRequest servletWebRequest = new ServletWebRequest(request, response);
         RequestContextHolder.setRequestAttributes(servletWebRequest);
 
-        ScimGroupProvisioning groupProvisioning = new JdbcScimGroupProvisioning(jdbcTemplate, new JdbcPagingListFactory(jdbcTemplate, limitSqlAdapter));
+        ScimGroupProvisioning groupProvisioning = new JdbcScimGroupProvisioning(jdbcTemplate, new JdbcPagingListFactory(jdbcTemplate, limitSqlAdapter), new IdentityZoneManagerImpl());
         identityZoneManager.getCurrentIdentityZone().getConfig().getUserConfig().setDefaultGroups(Collections.singletonList("uaa.user"));
         groupProvisioning.createOrGet(new ScimGroup(null, "uaa.user", identityZoneManager.getCurrentIdentityZone().getId()), identityZoneManager.getCurrentIdentityZone().getId());
         providerDefinition = new SamlIdentityProviderDefinition();
@@ -238,12 +238,12 @@ public class LoginSamlAuthenticationProviderTests extends JdbcTestBase {
         uaaSamlAdmin = groupProvisioning.create(new ScimGroup(null, UAA_SAML_ADMIN, IdentityZone.getUaaZoneId()), identityZoneManager.getCurrentIdentityZone().getId());
         ScimGroup uaaSamlTest = groupProvisioning.create(new ScimGroup(null, UAA_SAML_TEST, IdentityZone.getUaaZoneId()), identityZoneManager.getCurrentIdentityZone().getId());
 
-        JdbcScimGroupMembershipManager membershipManager = new JdbcScimGroupMembershipManager(jdbcTemplate);
+        JdbcScimGroupMembershipManager membershipManager = new JdbcScimGroupMembershipManager(jdbcTemplate, new IdentityZoneManagerImpl());
         membershipManager.setScimGroupProvisioning(groupProvisioning);
         membershipManager.setScimUserProvisioning(userProvisioning);
-        ScimUserBootstrap bootstrap = new ScimUserBootstrap(userProvisioning, groupProvisioning, membershipManager, Collections.EMPTY_LIST);
+        ScimUserBootstrap bootstrap = new ScimUserBootstrap(userProvisioning, groupProvisioning, membershipManager, Collections.EMPTY_LIST, new IdentityZoneManagerImpl());
 
-        externalManager = new JdbcScimGroupExternalMembershipManager(jdbcTemplate);
+        externalManager = new JdbcScimGroupExternalMembershipManager(jdbcTemplate, new IdentityZoneManagerImpl());
         externalManager.setScimGroupProvisioning(groupProvisioning);
         externalManager.mapExternalGroup(uaaSamlUser.getId(), SAML_USER, OriginKeys.SAML, identityZoneManager.getCurrentIdentityZone().getId());
         externalManager.mapExternalGroup(uaaSamlAdmin.getId(), SAML_ADMIN, OriginKeys.SAML, identityZoneManager.getCurrentIdentityZone().getId());

@@ -18,6 +18,7 @@ import org.cloudfoundry.identity.uaa.resources.SearchResults;
 import org.cloudfoundry.identity.uaa.scim.exception.ScimException;
 import org.cloudfoundry.identity.uaa.security.SecurityContextAccessor;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,7 +46,7 @@ public class UserIdConversionEndpointsTests {
 
     private IdentityProviderProvisioning provisioning = Mockito.mock(IdentityProviderProvisioning.class);
 
-    private UserIdConversionEndpoints endpoints = new UserIdConversionEndpoints(provisioning);
+    private UserIdConversionEndpoints endpoints = new UserIdConversionEndpoints(provisioning, new IdentityZoneManagerImpl());
 
     private SecurityContextAccessor securityContextAccessor = Mockito.mock(SecurityContextAccessor.class);
 

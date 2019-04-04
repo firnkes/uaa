@@ -23,6 +23,7 @@ import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.JdbcIdentityZoneProvisioning;
 import org.cloudfoundry.identity.uaa.zone.MultitenancyFixture;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -57,9 +58,9 @@ public class JdbcScimGroupExternalMembershipManagerTests extends JdbcTestBase {
         JdbcTemplate template = new JdbcTemplate(dataSource);
 
         JdbcPagingListFactory pagingListFactory = new JdbcPagingListFactory(template, limitSqlAdapter);
-        gdao = new JdbcScimGroupProvisioning(template, pagingListFactory);
+        gdao = new JdbcScimGroupProvisioning(template, pagingListFactory, new IdentityZoneManagerImpl());
 
-        edao = new JdbcScimGroupExternalMembershipManager(template);
+        edao = new JdbcScimGroupExternalMembershipManager(template, new IdentityZoneManagerImpl());
         edao.setScimGroupProvisioning(gdao);
 
         for (IdentityZone zone : Arrays.asList(IdentityZone.getUaa(), otherZone)) {

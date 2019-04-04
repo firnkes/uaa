@@ -17,7 +17,7 @@ import org.cloudfoundry.identity.uaa.provider.IdentityProvider;
 import org.cloudfoundry.identity.uaa.provider.IdentityProviderProvisioning;
 import org.cloudfoundry.identity.uaa.provider.UaaIdentityProviderDefinition;
 import org.cloudfoundry.identity.uaa.util.ObjectUtils;
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -31,20 +31,22 @@ public class DisableInternalUserManagementFilter extends OncePerRequestFilter {
 
     public static final String DISABLE_INTERNAL_USER_MANAGEMENT = "disableInternalUserManagement";
     private final IdentityProviderProvisioning identityProviderProvisioning;
+    private final IdentityZoneManager identityZoneManager;
 
     private static final String regex = "^/login|^/Users.*";
 
     private final Pattern pattern = Pattern.compile(regex);
 
-    public DisableInternalUserManagementFilter(IdentityProviderProvisioning identityProviderProvisioning) {
+    public DisableInternalUserManagementFilter(IdentityProviderProvisioning identityProviderProvisioning, IdentityZoneManager identityZoneManager) {
         this.identityProviderProvisioning = identityProviderProvisioning;
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         if (matches(request)) {
-            IdentityProvider idp = identityProviderProvisioning.retrieveByOriginIgnoreActiveFlag(OriginKeys.UAA, IdentityZoneHolder.get().getId());
+            IdentityProvider idp = identityProviderProvisioning.retrieveByOriginIgnoreActiveFlag(OriginKeys.UAA, identityZoneManager.getCurrentIdentityZone().getId());
             boolean isDisableInternalUserManagement = false;
             UaaIdentityProviderDefinition config = ObjectUtils.castInstance(idp.getConfig(), UaaIdentityProviderDefinition.class);
             if (config != null) {
