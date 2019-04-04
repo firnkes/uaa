@@ -1,6 +1,6 @@
 package org.cloudfoundry.identity.uaa.client;
 
-import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.cloudfoundry.identity.uaa.audit.event.EntityDeletedEvent;
@@ -45,6 +45,7 @@ public class ClientAdminBootstrap implements
 
     private final Map<String, Map<String, Object>> clients;
     private final Set<String> clientsToDelete;
+    private final IdentityZoneManager identityZoneManager;
     private final Set<String> autoApproveClients;
     private final boolean defaultOverride;
 
@@ -68,7 +69,8 @@ public class ClientAdminBootstrap implements
             final boolean defaultOverride,
             final Map<String, Map<String, Object>> clients,
             final Collection<String> autoApproveClients,
-            final Collection<String> clientsToDelete) {
+            final Collection<String> clientsToDelete,
+            IdentityZoneManager identityZoneManager) {
         this.passwordEncoder = passwordEncoder;
         this.clientRegistrationService = clientRegistrationService;
         this.clientMetadataProvisioning = clientMetadataProvisioning;
@@ -76,6 +78,7 @@ public class ClientAdminBootstrap implements
         this.clients = ofNullable(clients).orElse(Collections.emptyMap());
         this.autoApproveClients = new HashSet<>(ofNullable(autoApproveClients).orElse(Collections.emptySet()));
         this.clientsToDelete = new HashSet<>(ofNullable(clientsToDelete).orElse(Collections.emptySet()));
+        this.identityZoneManager = identityZoneManager;
     }
 
     @Override
@@ -230,7 +233,7 @@ public class ClientAdminBootstrap implements
             try {
                 ClientDetails client = clientRegistrationService.loadClientByClientId(clientId, IdentityZone.getUaaZoneId());
                 logger.debug("Deleting client from manifest:" + clientId);
-                EntityDeletedEvent<ClientDetails> delete = new EntityDeletedEvent<>(client, auth, IdentityZoneHolder.getCurrentZoneId());
+                EntityDeletedEvent<ClientDetails> delete = new EntityDeletedEvent<>(client, auth, identityZoneManager.getCurrentIdentityZoneId());
                 publish(delete);
             } catch (NoSuchClientException e) {
                 logger.debug("Ignoring delete for non existent client:" + clientId);

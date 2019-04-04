@@ -3,12 +3,12 @@ package org.cloudfoundry.identity.uaa.client;
 import org.cloudfoundry.identity.uaa.annotations.WithDatabaseContext;
 import org.cloudfoundry.identity.uaa.audit.event.EntityDeletedEvent;
 import org.cloudfoundry.identity.uaa.authentication.SystemAuthentication;
-import org.cloudfoundry.identity.uaa.constants.OriginKeys;
 import org.cloudfoundry.identity.uaa.oauth.client.ClientConstants;
 import org.cloudfoundry.identity.uaa.util.FakePasswordEncoder;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.MultitenantJdbcClientDetailsService;
 import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManager;
+import org.cloudfoundry.identity.uaa.zone.beans.IdentityZoneManagerImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class ClientAdminBootstrapTests {
                 true,
                 clients,
                 Collections.singleton(autoApproveId),
-                Collections.emptySet());
+                Collections.emptySet(), new IdentityZoneManagerImpl());
 
         mockApplicationEventPublisher = mock(ApplicationEventPublisher.class);
         clientAdminBootstrap.setApplicationEventPublisher(mockApplicationEventPublisher);
@@ -96,7 +96,7 @@ class ClientAdminBootstrapTests {
                     true,
                     null,
                     Collections.emptySet(),
-                    Collections.emptySet());
+                    Collections.emptySet(), new IdentityZoneManagerImpl());
         }
 
         @Test
@@ -131,7 +131,7 @@ class ClientAdminBootstrapTests {
                     true,
                     clients,
                     Collections.singleton(clientIdToDelete),
-                    Collections.singleton(clientIdToDelete));
+                    Collections.singleton(clientIdToDelete), new IdentityZoneManagerImpl());
             clientAdminBootstrap.setApplicationEventPublisher(mockApplicationEventPublisher);
         }
 
@@ -287,7 +287,7 @@ class ClientAdminBootstrapTests {
                     true,
                     clients,
                     Collections.singleton(autoApproveId),
-                    Collections.emptySet());
+                    Collections.emptySet(), new IdentityZoneManagerImpl());
             when(mockClientMetadataProvisioning.update(any(ClientMetadata.class), anyString())).thenReturn(new ClientMetadata());
         }
 
@@ -345,8 +345,8 @@ class ClientAdminBootstrapTests {
                         false,
                         clients,
                         Collections.singleton(autoApproveId),
-                        Collections.emptySet()
-                );
+                        Collections.emptySet(),
+                        new IdentityZoneManagerImpl());
             }
 
             @Test
