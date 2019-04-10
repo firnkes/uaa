@@ -16,6 +16,9 @@ package org.cloudfoundry.identity.uaa.account;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public class OpenIdConfiguration {
 
     @JsonProperty("issuer")
@@ -199,5 +202,45 @@ public class OpenIdConfiguration {
 
     public void setUiLocalesSupported(String[] uiLocalesSupported) {
         this.uiLocalesSupported = uiLocalesSupported;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof OpenIdConfiguration)) return false;
+        OpenIdConfiguration that = (OpenIdConfiguration) o;
+        return claimsParameterSupported == that.claimsParameterSupported &&
+                Objects.equals(issuer, that.issuer) &&
+                Objects.equals(authUrl, that.authUrl) &&
+                Objects.equals(tokenUrl, that.tokenUrl) &&
+                Arrays.equals(tokenAMR, that.tokenAMR) &&
+                Arrays.equals(tokenEndpointAuthSigningValues, that.tokenEndpointAuthSigningValues) &&
+                Objects.equals(userInfoUrl, that.userInfoUrl) &&
+                Objects.equals(jwksUri, that.jwksUri) &&
+                Arrays.equals(scopes, that.scopes) &&
+                Arrays.equals(responseTypes, that.responseTypes) &&
+                Arrays.equals(subjectTypesSupported, that.subjectTypesSupported) &&
+                Arrays.equals(idTokenSigningAlgValues, that.idTokenSigningAlgValues) &&
+                Arrays.equals(requestObjectSigningAlgValues, that.requestObjectSigningAlgValues) &&
+                Arrays.equals(claimTypesSupported, that.claimTypesSupported) &&
+                Arrays.equals(claimsSupported, that.claimsSupported) &&
+                Objects.equals(serviceDocumentation, that.serviceDocumentation) &&
+                Arrays.equals(uiLocalesSupported, that.uiLocalesSupported);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(issuer, authUrl, tokenUrl, userInfoUrl, jwksUri, claimsParameterSupported, serviceDocumentation);
+        result = 31 * result + Arrays.hashCode(tokenAMR);
+        result = 31 * result + Arrays.hashCode(tokenEndpointAuthSigningValues);
+        result = 31 * result + Arrays.hashCode(scopes);
+        result = 31 * result + Arrays.hashCode(responseTypes);
+        result = 31 * result + Arrays.hashCode(subjectTypesSupported);
+        result = 31 * result + Arrays.hashCode(idTokenSigningAlgValues);
+        result = 31 * result + Arrays.hashCode(requestObjectSigningAlgValues);
+        result = 31 * result + Arrays.hashCode(claimTypesSupported);
+        result = 31 * result + Arrays.hashCode(claimsSupported);
+        result = 31 * result + Arrays.hashCode(uiLocalesSupported);
+        return result;
     }
 }

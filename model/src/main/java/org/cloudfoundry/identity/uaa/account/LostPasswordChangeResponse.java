@@ -18,12 +18,16 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Objects;
+
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class LostPasswordChangeResponse {
 
-    @JsonProperty("code") private String loginCode;
-    @JsonProperty("user_id") private String userId;
+    @JsonProperty("code")
+    private String loginCode;
+    @JsonProperty("user_id")
+    private String userId;
     private String username;
     private String email;
 
@@ -57,5 +61,21 @@ public class LostPasswordChangeResponse {
 
     public String getEmail() {
         return email;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof LostPasswordChangeResponse)) return false;
+        LostPasswordChangeResponse that = (LostPasswordChangeResponse) o;
+        return Objects.equals(loginCode, that.loginCode) &&
+                Objects.equals(userId, that.userId) &&
+                Objects.equals(username, that.username) &&
+                Objects.equals(email, that.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(loginCode, userId, username, email);
     }
 }
