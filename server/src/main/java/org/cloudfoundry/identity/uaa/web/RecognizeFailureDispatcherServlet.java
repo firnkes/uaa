@@ -56,6 +56,7 @@ public class RecognizeFailureDispatcherServlet extends GenericServlet {
             delegate.init(config);
         } catch (Exception e) {
             logger.error("Fatal error: Unable to start UAA application.", e);
+            System.exit(1002);
             failed = true;
         }
     }
