@@ -18,6 +18,7 @@ package org.cloudfoundry.identity.uaa.scim.event;
 import org.cloudfoundry.identity.uaa.audit.AuditEvent;
 import org.cloudfoundry.identity.uaa.audit.AuditEventType;
 import org.cloudfoundry.identity.uaa.audit.event.AbstractUaaEvent;
+import org.cloudfoundry.identity.uaa.authentication.UaaPrincipal;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.springframework.security.core.Authentication;
@@ -89,13 +90,39 @@ public class UserModifiedEvent extends AbstractUaaEvent {
 
     @Override
     public AuditEvent getAuditEvent() {
-        String[] details = {"user_id="+userId, "username="+username};
-        String data = JsonUtils.writeValueAsString(details);
+        String data = JsonUtils.writeValueAsString(buildDetails());
         return createAuditRecord(
             userId,
             eventType,
             getOrigin(getAuthentication()),
             data);
+    }
+
+    private String[] buildDetails() {
+        if (AuditEventType.UserCreatedEvent.equals(this.eventType)) {
+
+            // Was this created by a user?
+            if(getContextAuthentication().getPrincipal() instanceof UaaPrincipal) {
+                UaaPrincipal uaaPrincipal = (UaaPrincipal) getContextAuthentication().getPrincipal();
+
+                return new String[]{
+                        "user_id=" + userId,
+                        "username=" + username,
+                        "createdBy_UserID=" + uaaPrincipal.getId(),
+                        "createdBy_UserName=" + uaaPrincipal.getName()
+                };
+            }
+
+            return new String[]{
+                    "user_id=" + userId,
+                    "username=" + username,
+                    "createdBy_ClientID=" + getContextAuthentication().getPrincipal()
+            };
+        }
+        return new String[]{
+                "user_id=" + userId,
+                "username=" + username
+        };
     }
 
     public String getUserId() {
